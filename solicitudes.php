@@ -24,9 +24,16 @@ require_once __DIR__ . '/includes/auth.php';
 
 // ============================================================
 // REQUERIR LOGIN
+//
+// Esta página (listado y gestión de solicitudes) es
+// exclusiva de técnicos y administradores. Los docentes
+// usan mis_solicitudes.php para ver únicamente las propias.
 // ============================================================
 
-requerirLogin();
+requerirRoles([
+    'Tecnico',
+    'Administrador'
+]);
 
 
 // ============================================================
@@ -53,7 +60,7 @@ if (!verificarUsuarioActivo($conexion)) {
 $idUsuario = (int) usuarioId();
 
 $rolActual =
-    $_SESSION['usuario_rol']
+    $_SESSION['usuario']['rol']
     ?? 'Docente';
 
 

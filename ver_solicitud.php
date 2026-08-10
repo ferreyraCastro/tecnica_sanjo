@@ -2458,6 +2458,39 @@ require_once __DIR__
 
                         </div>
 
+
+                        <?php
+
+                        $enlaceWaTecnico =
+                            enlaceWhatsapp(
+                                $tecnicoAsignado['telefono']
+                                ?? null,
+                                'Hola, te escribo por la solicitud '
+                                . numeroTicket($idSolicitud)
+                                . ': '
+                                . $solicitud['titulo']
+                            );
+
+                        ?>
+
+                        <?php if ($enlaceWaTecnico): ?>
+
+                            <a
+                                href="<?= e($enlaceWaTecnico) ?>"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="btn btn-sm w-100 mt-3"
+                                style="background:#25D366;color:#FFFFFF;font-weight:700;"
+                            >
+
+                                <i class="bi bi-whatsapp me-1"></i>
+
+                                Contactar por WhatsApp
+
+                            </a>
+
+                        <?php endif; ?>
+
                     <?php else: ?>
 
                         <div class="empty-box">

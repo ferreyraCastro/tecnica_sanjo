@@ -4,6 +4,19 @@ if(session_status()===PHP_SESSION_NONE){
 }
 
 $usuario=$_SESSION["usuario"] ?? null;
+
+$__rolNav = $usuario['rol'] ?? '';
+$__esTecnicoAdminNav = in_array($__rolNav, ['Tecnico', 'Administrador'], true);
+
+$__hrefDashboard = url(function_exists('rutaDashboardRol') ? rutaDashboardRol() : 'dashboard.php');
+
+$__hrefInformatica = $__esTecnicoAdminNav
+    ? url('tecnico/informatica.php')
+    : url('solicitudes.php?tipo=Informatica');
+
+$__hrefMantenimiento = $__esTecnicoAdminNav
+    ? url('tecnico/mantenimiento.php')
+    : url('solicitudes.php?tipo=Mantenimiento');
 ?>
 <!doctype html>
 <html lang="es">
@@ -174,9 +187,9 @@ margin-bottom:25px;
 
 <div class="container-fluid">
 
-<a class="navbar-brand" href="dashboard.php">
+<a class="navbar-brand" href="<?= htmlspecialchars($__hrefDashboard) ?>">
 
-<img src="assets/img/logo.png">
+<img src="<?= htmlspecialchars(asset('img/logo.png')) ?>">
 
 Colegio San José
 
@@ -199,42 +212,46 @@ id="menu">
 <ul class="navbar-nav me-auto">
 
 <li class="nav-item">
-<a class="nav-link" href="dashboard.php">
+<a class="nav-link" href="<?= htmlspecialchars($__hrefDashboard) ?>">
 <i class="bi bi-speedometer2"></i>
 Dashboard
 </a>
 </li>
 
+<?php if ($__esTecnicoAdminNav): ?>
+
 <li class="nav-item">
-<a class="nav-link" href="solicitudes.php">
+<a class="nav-link" href="<?= htmlspecialchars(url('solicitudes.php')) ?>">
 <i class="bi bi-ticket-detailed"></i>
 Solicitudes
 </a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="informatica.php">
+<a class="nav-link" href="<?= htmlspecialchars($__hrefInformatica) ?>">
 <i class="bi bi-pc-display"></i>
 Informática
 </a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="mantenimiento.php">
+<a class="nav-link" href="<?= htmlspecialchars($__hrefMantenimiento) ?>">
 <i class="bi bi-tools"></i>
 Mantenimiento
 </a>
 </li>
 
+<?php endif; ?>
+
 <li class="nav-item">
-<a class="nav-link" href="horarios.php">
+<a class="nav-link" href="<?= htmlspecialchars(url('horarios.php')) ?>">
 <i class="bi bi-calendar-week"></i>
 Horarios
 </a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="mejoras.php">
+<a class="nav-link" href="<?= htmlspecialchars(url('mejoras.php')) ?>">
 <i class="bi bi-lightbulb"></i>
 Mejoras
 </a>
@@ -344,11 +361,13 @@ data-bs-toggle="dropdown">
 
 <ul class="dropdown-menu dropdown-menu-end">
 
+<?php if ($__esTecnicoAdminNav): ?>
+
 <li>
 
 <a
 class="dropdown-item"
-href="perfil.php">
+href="<?= htmlspecialchars(url('tecnico/perfil.php')) ?>">
 
 <i class="bi bi-person"></i>
 
@@ -358,11 +377,13 @@ Mi perfil
 
 </li>
 
+<?php endif; ?>
+
 <li>
 
 <a
 class="dropdown-item"
-href="mis_solicitudes.php">
+href="<?= htmlspecialchars(url('mis_solicitudes.php')) ?>">
 
 <i class="bi bi-ticket"></i>
 
@@ -378,7 +399,7 @@ Mis solicitudes
 
 <a
 class="dropdown-item text-danger"
-href="logout.php">
+href="<?= htmlspecialchars(url('logout.php')) ?>">
 
 <i class="bi bi-box-arrow-right"></i>
 

@@ -169,6 +169,7 @@ function obtenerUsuario(
             nombre,
             apellido,
             correo,
+            telefono,
             rol,
             estado,
             ultimo_acceso,
@@ -1088,7 +1089,8 @@ function obtenerTecnicos(PDO $conexion): array
             id_usuario,
             nombre,
             apellido,
-            correo
+            correo,
+            telefono
 
         FROM usuarios
 
@@ -1126,7 +1128,8 @@ function obtenerTecnicoAsignado(
 
             u.nombre,
             u.apellido,
-            u.correo
+            u.correo,
+            u.telefono
 
         FROM solicitudes_asignaciones a
 
@@ -3772,4 +3775,108 @@ function iconoTipoPendiente(string $tipoPendiente): string
         default
             => 'bi-question-circle'
     };
+}
+
+
+// ============================================================
+// MARCAR UNA NOTIFICACIÓN COMO LEÍDA
+// ============================================================
+
+function marcarNotificacionLeida(
+    PDO $conexion,
+    int $idNotificacion,
+    int $idUsuario
+): bool {
+
+    $sql = "
+        UPDATE notificaciones
+        SET leida = 1
+        WHERE id_notificacion = ?
+        AND id_usuario = ?
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    return $stmt->execute([
+        $idNotificacion,
+        $idUsuario
+    ]);
+}
+
+
+// ============================================================
+// MARCAR TODAS LAS NOTIFICACIONES DE UN USUARIO COMO LEÍDAS
+// ============================================================
+
+function marcarTodasNotificacionesLeidas(
+    PDO $conexion,
+    int $idUsuario
+): bool {
+
+    $sql = "
+        UPDATE notificaciones
+        SET leida = 1
+        WHERE id_usuario = ?
+        AND leida = 0
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    return $stmt->execute([
+        $idUsuario
+    ]);
+}
+
+
+// ============================================================
+// TELÉFONO EN FORMATO WHATSAPP (solo dígitos)
+//
+// Ejemplo:
+// "351 555-1234" -> "3515551234"
+// ============================================================
+
+function telefonoSoloNumeros(?string $telefono): string
+{
+    return preg_replace(
+        '/[^0-9]/',
+        '',
+        $telefono ?? ''
+    ) ?? '';
+}
+
+
+// ============================================================
+// ENLACE DE WHATSAPP (click-to-chat)
+//
+// Si el teléfono no tiene código de país (54 = Argentina),
+// se antepone automáticamente.
+// ============================================================
+
+function enlaceWhatsapp(
+    ?string $telefono,
+    string $mensaje = ''
+): ?string {
+
+    $numero = telefonoSoloNumeros($telefono);
+
+    if ($numero === '') {
+        return null;
+    }
+
+    if (
+        !str_starts_with($numero, '54')
+        && strlen($numero) <= 11
+    ) {
+
+        $numero = '54' . $numero;
+    }
+
+    $url = 'https://wa.me/' . $numero;
+
+    if ($mensaje !== '') {
+
+        $url .= '?text=' . rawurlencode($mensaje);
+    }
+
+    return $url;
 }

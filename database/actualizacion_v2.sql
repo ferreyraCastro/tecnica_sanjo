@@ -7,6 +7,15 @@
 -- Ejecutar este script UNA VEZ sobre la base ya existente
 -- "tecnica_sanjo" (por ejemplo, desde phpMyAdmin -> pestaña SQL).
 -- No borra ni modifica datos existentes, solo agrega.
+--
+-- Si tus tablas originales NO son InnoDB vas a ver el error:
+-- "#1005 - Error: 150 Foreign key constraint is incorrectly
+-- formed" / "Referenced table 'xxx' not found in the data
+-- dictionary". En ese caso, correr primero:
+--
+-- database/fix_engine_innodb.sql
+--
+-- y recién después este archivo.
 -- ============================================================
 
 USE tecnica_sanjo;
@@ -49,7 +58,7 @@ CREATE TABLE IF NOT EXISTS repuestos (
     fecha_actualizacion TIMESTAMP
         NOT NULL DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -107,7 +116,7 @@ CREATE TABLE IF NOT EXISTS repuestos_movimientos (
     CONSTRAINT fk_movimiento_usuario
         FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -170,7 +179,7 @@ CREATE TABLE IF NOT EXISTS horarios_tecnicos (
         FOREIGN KEY (id_tecnico)
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -229,7 +238,7 @@ CREATE TABLE IF NOT EXISTS turnos_reparacion (
         FOREIGN KEY (id_turno_origen)
         REFERENCES turnos_reparacion(id_turno)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -282,7 +291,7 @@ CREATE TABLE IF NOT EXISTS horas_extra (
         FOREIGN KEY (id_solicitud)
         REFERENCES solicitudes(id_solicitud)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================

@@ -253,10 +253,34 @@ function irAlDashboard(): never
     header(
         'Location: ' .
         rutaBase() .
-        'dashboard.php'
+        rutaDashboardRol()
     );
 
     exit;
+}
+
+
+// ============================================================
+// RUTA DE DASHBOARD SEGÚN EL ROL
+//
+// Docente       -> dashboard.php
+// Tecnico       -> tecnico/dashboard.php
+// Administrador -> admin/dashboard.php
+// ============================================================
+
+function rutaDashboardRol(): string
+{
+    return match (usuarioRol()) {
+
+        'Administrador'
+            => 'admin/dashboard.php',
+
+        'Tecnico'
+            => 'tecnico/dashboard.php',
+
+        default
+            => 'dashboard.php'
+    };
 }
 
 
@@ -893,10 +917,13 @@ function requerirAccesoSolicitud(
 
 
 // ============================================================
-// DOCENTE PUEDE MODIFICAR SOLICITUD
+// PERMISO PARA MODIFICAR UNA SOLICITUD
 //
-// Solo mientras se encuentre en estado Nueva.
-//
+// Los docentes NUNCA pueden editar una solicitud, ni siquiera
+// la propia: solo pueden crearla, seguir su estado y comentar.
+// Los técnicos tampoco modifican los datos originales de la
+// solicitud (cargan intervenciones aparte). Solo el
+// administrador puede editarla.
 // ============================================================
 
 function puedeEditarSolicitud(
@@ -904,61 +931,10 @@ function puedeEditarSolicitud(
     int $idSolicitud
 ): bool {
 
-    if (!estaLogueado()) {
-        return false;
-    }
+    // $conexion y $idSolicitud se mantienen en la firma
+    // por compatibilidad con quien ya llame a esta función.
 
-
-    // Administrador puede editar
-
-    if (esAdministrador()) {
-
-        return true;
-    }
-
-
-    // Técnico no modifica
-    // la solicitud original
-
-    if (esTecnico()) {
-
-        return false;
-    }
-
-
-    // ========================================================
-    // DOCENTE
-    // ========================================================
-
-    $sql = "
-        SELECT COUNT(*)
-
-        FROM solicitudes
-
-        WHERE id_solicitud = ?
-
-        AND id_usuario = ?
-
-        AND estado = 'Nueva'
-    ";
-
-
-    $stmt =
-        $conexion->prepare($sql);
-
-
-    $stmt->execute([
-
-        $idSolicitud,
-
-        usuarioId()
-
-    ]);
-
-
-    return
-        (int)$stmt->fetchColumn()
-        > 0;
+    return esAdministrador();
 }
 
 

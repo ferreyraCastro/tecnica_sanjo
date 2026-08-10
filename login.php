@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $destino =
                         $_SESSION['url_despues_login']
-                        ?? url('dashboard.php');
+                        ?? url(rutaDashboardRol());
 
 
                     unset(
@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         $destino =
                             url(
-                                'dashboard.php'
+                                rutaDashboardRol()
                             );
                     }
 

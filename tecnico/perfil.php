@@ -54,6 +54,7 @@ $stmtUsuario = $conexion->prepare("
         nombre,
         apellido,
         correo,
+        telefono,
         rol,
         estado,
         ultimo_acceso,
@@ -105,6 +106,9 @@ $apellido =
 
 $correo =
     $usuario['correo'];
+
+$telefono =
+    $usuario['telefono'] ?? '';
 
 
 // ============================================================
@@ -165,6 +169,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
 
+            $telefono =
+                preg_replace(
+                    '/[^0-9+\s()\-]/',
+                    '',
+                    trim(
+                        $_POST['telefono']
+                        ?? ''
+                    )
+                )
+                ?? '';
+
+
             // ================================================
             // VALIDACIONES
             // ================================================
@@ -209,6 +225,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $error =
                     'El correo no puede superar los 150 caracteres.';
+
+            } elseif (
+                $telefono !== ''
+                &&
+                mb_strlen($telefono) > 30
+            ) {
+
+                $error =
+                    'El teléfono no puede superar los 30 caracteres.';
             }
 
 
@@ -264,7 +289,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             SET
                                 nombre = ?,
                                 apellido = ?,
-                                correo = ?
+                                correo = ?,
+                                telefono = ?
 
                             WHERE id_usuario = ?
                         ");
@@ -275,6 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $nombre,
                         $apellido,
                         $correo,
+                        $telefono !== '' ? $telefono : null,
                         $idUsuario
 
                     ]);
@@ -282,20 +309,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // ========================================
                     // ACTUALIZAR DATOS EN SESIÓN
-                    //
-                    // Ajustá estas claves si tu login usa
-                    // nombres diferentes.
                     // ========================================
 
-                    $_SESSION['usuario_nombre'] =
-                        trim(
-                            $nombre
-                            . ' '
-                            . $apellido
-                        );
+                    $_SESSION['usuario']['nombre'] =
+                        $nombre;
 
 
-                    $_SESSION['usuario_correo'] =
+                    $_SESSION['usuario']['apellido'] =
+                        $apellido;
+
+
+                    $_SESSION['usuario']['correo'] =
                         $correo;
 
 
@@ -1712,6 +1736,7 @@ require_once __DIR__
                                         $usuario[
                                             'fecha_creacion'
                                         ]
+                                        ?? null
                                     )
                                 ) ?>
 
@@ -1736,6 +1761,7 @@ require_once __DIR__
                                         $usuario[
                                             'fecha_actualizacion'
                                         ]
+                                        ?? null
                                     )
                                 ) ?>
 
@@ -2051,6 +2077,45 @@ require_once __DIR__
 
                                     Este correo también se utiliza
                                     para ingresar al sistema.
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- TELÉFONO -->
+
+                            <div class="col-12">
+
+                                <label
+                                    for="telefono"
+                                    class="form-label"
+                                >
+
+                                    Teléfono / WhatsApp
+
+                                </label>
+
+
+                                <input
+                                    type="tel"
+                                    name="telefono"
+                                    id="telefono"
+                                    class="form-control"
+                                    maxlength="30"
+                                    placeholder="Ej.: 351 555-1234"
+                                    value="<?= e(
+                                        $telefono
+                                    ) ?>"
+                                >
+
+
+                                <div class="form-help">
+
+                                    Se usa para que los docentes
+                                    puedan contactarte por WhatsApp
+                                    y para que te lleguen avisos
+                                    de nuevos tickets a tu celular.
 
                                 </div>
 

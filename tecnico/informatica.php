@@ -52,7 +52,7 @@ if (!verificarUsuarioActivo($conexion)) {
 $idUsuario = (int) usuarioId();
 
 $rolActual =
-    $_SESSION['usuario_rol']
+    $_SESSION['usuario']['rol']
     ?? '';
 
 

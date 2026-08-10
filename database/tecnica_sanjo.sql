@@ -46,7 +46,7 @@ CREATE TABLE usuarios (
     fecha_actualizacion TIMESTAMP
         NOT NULL DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -75,7 +75,7 @@ CREATE TABLE sectores (
 
     fecha_creacion TIMESTAMP
         NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -97,7 +97,7 @@ CREATE TABLE categorias (
     activo TINYINT(1) NOT NULL DEFAULT 1,
 
     UNIQUE KEY unique_categoria_tipo (tipo, nombre)
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -163,7 +163,7 @@ CREATE TABLE solicitudes (
         FOREIGN KEY (id_categoria)
         REFERENCES categorias(id_categoria)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -198,7 +198,7 @@ CREATE TABLE solicitudes_asignaciones (
         FOREIGN KEY (asignado_por)
         REFERENCES usuarios(id_usuario)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -236,7 +236,7 @@ CREATE TABLE solicitud_imagenes (
         FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -265,7 +265,7 @@ CREATE TABLE comentarios (
         FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -308,7 +308,7 @@ CREATE TABLE intervenciones (
     CONSTRAINT fk_intervencion_tecnico
         FOREIGN KEY (id_tecnico)
         REFERENCES usuarios(id_usuario)
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -339,7 +339,7 @@ CREATE TABLE intervencion_imagenes (
         FOREIGN KEY (id_intervencion)
         REFERENCES intervenciones(id_intervencion)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -372,7 +372,7 @@ CREATE TABLE solicitud_historial (
         FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -407,7 +407,7 @@ CREATE TABLE horarios_mantenimiento (
 
     activo TINYINT(1)
         NOT NULL DEFAULT 1
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -472,7 +472,7 @@ CREATE TABLE mejoras (
         FOREIGN KEY (id_sector)
         REFERENCES sectores(id_sector)
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -497,7 +497,7 @@ CREATE TABLE mejora_imagenes (
         FOREIGN KEY (id_mejora)
         REFERENCES mejoras(id_mejora)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -543,7 +543,7 @@ CREATE TABLE materiales (
         FOREIGN KEY (id_mejora)
         REFERENCES mejoras(id_mejora)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -571,7 +571,7 @@ CREATE TABLE notificaciones (
         FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -586,7 +586,7 @@ CREATE TABLE configuracion (
     valor TEXT,
 
     descripcion VARCHAR(255)
-);
+) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -702,7 +702,36 @@ VALUES
 
 ('Administracion', 'Oficina'),
 
-('Sala de Profesores', 'Sala'),
+('Tutores', '1° piso'),
+
+('Tutores', '2° piso'),
+
+('Sala de Profesores', 'Primaria'),
+('Sala de Profesores', 'Secundaria'),
+
+('Sala de cuatro', 'Inicial'),
+('Sala de cinco', 'Inicial'),
+
+('Primer grado', 'Primaria'),
+('Segundo grado', 'Primaria'),
+('Terecer grado', 'Primaria'),
+('Cuarto grado', 'Primaria'),
+('Quinto grado', 'Primaria'),
+('Sexto grado', 'Primaria'),
+
+('Primer Año- A', 'Secundaria'),
+('Segundo Año- A', 'Secundaria'),
+('Tercero Año- A', 'Secundaria'),
+('Cuarto Año- A', 'Secundaria'),
+('Quinto Año- A', 'Secundaria'),
+('Sexto Año- A', 'Secundaria'),
+
+('Primer Año- B', 'Secundaria'),
+('Segundo Año- B', 'Secundaria'),
+('Tercero Año- B', 'Secundaria'),
+('Cuarto Año- B', 'Secundaria'),
+('Quinto Año- B', 'Secundaria'),
+('Sexto Año- B', 'Secundaria'),
 
 ('Patio', 'Patio');
 

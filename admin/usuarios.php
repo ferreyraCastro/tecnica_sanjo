@@ -180,6 +180,18 @@ if (
             );
 
 
+        $telefono =
+            preg_replace(
+                '/[^0-9+\s()\-]/',
+                '',
+                trim(
+                    $_POST['telefono']
+                    ?? ''
+                )
+            )
+            ?? '';
+
+
         $dni =
             normalizarDni(
                 $_POST['dni']
@@ -218,6 +230,9 @@ if (
 
             'correo' =>
                 $correo,
+
+            'telefono' =>
+                $telefono,
 
             'rol' =>
                 $rol,
@@ -265,6 +280,15 @@ if (
 
             $error =
                 'Ingresá una dirección de correo válida.';
+
+        } elseif (
+            $telefono !== ''
+            &&
+            mb_strlen($telefono) > 30
+        ) {
+
+            $error =
+                'El teléfono no puede superar los 30 caracteres.';
 
         } elseif (
             !in_array(
@@ -439,6 +463,7 @@ if (
                                     nombre = ?,
                                     apellido = ?,
                                     correo = ?,
+                                    telefono = ?,
                                     dni_hash = ?,
                                     rol = ?,
                                     estado = ?,
@@ -453,6 +478,7 @@ if (
                             $nombre,
                             $apellido,
                             $correo,
+                            $telefono !== '' ? $telefono : null,
                             $dniHash,
                             $rol,
                             $estado,
@@ -473,6 +499,7 @@ if (
                                     nombre = ?,
                                     apellido = ?,
                                     correo = ?,
+                                    telefono = ?,
                                     rol = ?,
                                     estado = ?,
                                     fecha_actualizacion = NOW()
@@ -486,6 +513,7 @@ if (
                             $nombre,
                             $apellido,
                             $correo,
+                            $telefono !== '' ? $telefono : null,
                             $rol,
                             $estado,
                             $idUsuario
@@ -520,6 +548,7 @@ if (
                                 nombre,
                                 apellido,
                                 correo,
+                                telefono,
                                 dni_hash,
                                 rol,
                                 estado,
@@ -528,6 +557,7 @@ if (
                             )
                             VALUES
                             (
+                                ?,
                                 ?,
                                 ?,
                                 ?,
@@ -545,6 +575,7 @@ if (
                         $nombre,
                         $apellido,
                         $correo,
+                        $telefono !== '' ? $telefono : null,
                         $dniHash,
                         $rol,
                         $estado
@@ -1180,6 +1211,7 @@ if (
                 nombre,
                 apellido,
                 correo,
+                telefono,
                 rol,
                 estado
 
@@ -1216,6 +1248,7 @@ $form =
         'nombre' => '',
         'apellido' => '',
         'correo' => '',
+        'telefono' => '',
         'rol' => 'Docente',
         'estado' => 'Activo'
 
@@ -2680,6 +2713,42 @@ require_once __DIR__
                         </div>
 
 
+                        <!-- TELÉFONO -->
+
+                        <div class="mb-3">
+
+                            <label
+                                for="telefono"
+                                class="form-label"
+                            >
+                                Teléfono / WhatsApp
+                            </label>
+
+                            <input
+                                type="tel"
+                                name="telefono"
+                                id="telefono"
+                                class="form-control"
+                                maxlength="30"
+                                placeholder="Ej.: 351 555-1234"
+                                value="<?= e(
+                                    $form['telefono']
+                                    ?? ''
+                                ) ?>"
+                            >
+
+                            <div class="form-help">
+
+                                Especialmente importante en
+                                técnicos: se usa para avisar
+                                por WhatsApp cuando llega
+                                un nuevo ticket.
+
+                            </div>
+
+                        </div>
+
+
                         <!-- DNI -->
 
                         <div class="mb-3">
@@ -3178,6 +3247,29 @@ require_once __DIR__
 
                                                     </div>
 
+
+                                                    <?php if (
+                                                        !empty(
+                                                            $usuario[
+                                                                'telefono'
+                                                            ]
+                                                        )
+                                                    ): ?>
+
+                                                        <div class="usuario-correo">
+
+                                                            <i class="bi bi-telephone"></i>
+
+                                                            <?= e(
+                                                                $usuario[
+                                                                    'telefono'
+                                                                ]
+                                                            ) ?>
+
+                                                        </div>
+
+                                                    <?php endif; ?>
+
                                                 </div>
 
                                             </div>
@@ -3423,6 +3515,36 @@ require_once __DIR__
                                                     <i class="bi bi-pencil"></i>
 
                                                 </a>
+
+
+                                                <!-- WHATSAPP -->
+
+                                                <?php
+
+                                                $enlaceWa =
+                                                    enlaceWhatsapp(
+                                                        $usuario['telefono']
+                                                        ?? null
+                                                    );
+
+                                                ?>
+
+                                                <?php if ($enlaceWa): ?>
+
+                                                    <a
+                                                        href="<?= e($enlaceWa) ?>"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="action-button"
+                                                        style="color:#25D366;background:#E7F9EF;"
+                                                        title="Contactar por WhatsApp"
+                                                    >
+
+                                                        <i class="bi bi-whatsapp"></i>
+
+                                                    </a>
+
+                                                <?php endif; ?>
 
 
                                                 <!-- ACTIVAR / DESACTIVAR -->
