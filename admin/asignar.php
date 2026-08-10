@@ -10,6 +10,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/funciones.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 
 // ============================================================
@@ -474,6 +475,8 @@ if (
                             nombre,
                             apellido,
                             correo,
+                            telefono,
+                            whatsapp_apikey,
                             rol,
                             estado
 
@@ -876,6 +879,39 @@ if (
                     $conexion->commit();
 
 
+                    // =========================================
+                    // AVISAR AL TÉCNICO ASIGNADO
+                    // (correo con adjunto + WhatsApp si tiene
+                    // apikey cargada). No interrumpe el flujo
+                    // si falla.
+                    // =========================================
+
+                    try {
+
+                        notificarAsignacion(
+                            $conexion,
+                            $solicitud,
+                            $idSolicitud,
+                            $tecnicoSeleccionado
+                        );
+
+                        notificarAsignacionWhatsapp(
+                            $idSolicitud,
+                            $solicitud['titulo'] ?? '',
+                            $solicitud['descripcion'] ?? '',
+                            $tecnicoSeleccionado['telefono'] ?? null,
+                            $tecnicoSeleccionado['whatsapp_apikey'] ?? null
+                        );
+
+                    } catch (Throwable $e) {
+
+                        error_log(
+                            'Error avisando asignación: '
+                            . $e->getMessage()
+                        );
+                    }
+
+
                     flash(
                         'success',
                         $asignacionActual
@@ -1160,8 +1196,6 @@ require_once __DIR__
 .asignar-card {
 
     overflow: hidden;
-
-    height: 100%;
 
     border:
         1px solid #ECECEC;
@@ -2095,7 +2129,7 @@ textarea.form-control {
                  ASIGNAR
             ============================================== -->
 
-            <div class="asignar-card">
+            <div class="asignar-card mt-4">
 
                 <div class="asignar-card-header">
 
@@ -2508,7 +2542,7 @@ textarea.form-control {
                  HISTORIAL
             ============================================== -->
 
-            <div class="asignar-card">
+            <div class="asignar-card mt-4">
 
                 <div class="asignar-card-header">
 

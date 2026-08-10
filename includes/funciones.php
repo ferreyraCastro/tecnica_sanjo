@@ -170,6 +170,7 @@ function obtenerUsuario(
             apellido,
             correo,
             telefono,
+            whatsapp_apikey,
             rol,
             estado,
             ultimo_acceso,
@@ -1178,7 +1179,8 @@ function obtenerTecnicos(PDO $conexion): array
             nombre,
             apellido,
             correo,
-            telefono
+            telefono,
+            whatsapp_apikey
 
         FROM usuarios
 
@@ -1217,7 +1219,8 @@ function obtenerTecnicoAsignado(
             u.nombre,
             u.apellido,
             u.correo,
-            u.telefono
+            u.telefono,
+            u.whatsapp_apikey
 
         FROM solicitudes_asignaciones a
 
@@ -3978,4 +3981,182 @@ function enlaceWhatsapp(
     }
 
     return $url;
+}
+
+
+// ============================================================
+// ENVIAR WHATSAPP AUTOMÁTICO (CallMeBot)
+//
+// A diferencia de enlaceWhatsapp() (que solo arma un link
+// para que la persona lo mande a mano), esto lo envía solo,
+// sin intervención humana.
+//
+// Requiere que el destinatario haya activado su "apikey"
+// personal de CallMeBot una sola vez:
+//
+// 1. Agregar el contacto +34 644 59 71 67 en su WhatsApp.
+// 2. Enviarle el mensaje: "I allow callmebot to send me
+//    messages"
+// 3. CallMeBot responde con un número de apikey. Ese número
+//    se carga en su perfil (Teléfono / WhatsApp + Apikey).
+//
+// Es un servicio gratuito pensado para uso personal/bajo
+// volumen: puede tener demoras o cortes. Si el usuario no
+// cargó su apikey, simplemente no se envía nada (no rompe
+// el flujo).
+// ============================================================
+
+function enviarWhatsapp(
+    ?string $telefono,
+    ?string $apikey,
+    string $mensaje
+): bool {
+
+    $apikey = trim((string)$apikey);
+
+    if ($apikey === '') {
+        return false;
+    }
+
+    $numero = telefonoSoloNumeros($telefono);
+
+    if ($numero === '') {
+        return false;
+    }
+
+    if (
+        !str_starts_with($numero, '54')
+        && strlen($numero) <= 11
+    ) {
+
+        $numero = '54' . $numero;
+    }
+
+    $url =
+        'https://api.callmebot.com/whatsapp.php?'
+        . http_build_query([
+            'phone' => $numero,
+            'text' => $mensaje,
+            'apikey' => $apikey
+        ]);
+
+    try {
+
+        $contexto = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 8
+            ]
+        ]);
+
+        $respuesta =
+            @file_get_contents(
+                $url,
+                false,
+                $contexto
+            );
+
+        if ($respuesta === false) {
+
+            error_log(
+                'CallMeBot: no se pudo enviar el mensaje a '
+                . $numero
+            );
+
+            return false;
+        }
+
+        return true;
+
+    } catch (Throwable $e) {
+
+        error_log(
+            'Error enviando WhatsApp: '
+            . $e->getMessage()
+        );
+
+        return false;
+    }
+}
+
+
+// ============================================================
+// AVISAR NUEVO TICKET POR WHATSAPP
+// A todos los técnicos que tengan teléfono + apikey cargados.
+// ============================================================
+
+function notificarNuevoTicketWhatsapp(
+    PDO $conexion,
+    int $idSolicitud,
+    string $titulo,
+    string $prioridad
+): void {
+
+    $numero = numeroTicket($idSolicitud);
+
+    $urlTicket =
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
+
+    $mensaje =
+        "Nuevo ticket {$numero}\n"
+        . "{$titulo}\n"
+        . "Prioridad: {$prioridad}\n"
+        . $urlTicket;
+
+    foreach (obtenerTecnicos($conexion) as $tecnico) {
+
+        enviarWhatsapp(
+            $tecnico['telefono'] ?? null,
+            $tecnico['whatsapp_apikey'] ?? null,
+            $mensaje
+        );
+    }
+}
+
+
+// ============================================================
+// AVISAR ASIGNACIÓN POR WHATSAPP
+// Al técnico que acaba de ser asignado, con una breve
+// descripción del problema.
+// ============================================================
+
+function notificarAsignacionWhatsapp(
+    int $idSolicitud,
+    string $titulo,
+    string $descripcion,
+    ?string $telefonoTecnico,
+    ?string $apikeyTecnico
+): void {
+
+    $numero = numeroTicket($idSolicitud);
+
+    $urlTicket =
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
+
+    $descripcionCorta =
+        mb_strlen($descripcion) > 200
+            ? mb_substr($descripcion, 0, 200) . '...'
+            : $descripcion;
+
+    $mensaje =
+        "Te asignaron el ticket {$numero}\n"
+        . "{$titulo}"
+        . (
+            $descripcionCorta !== ''
+                ? "\n{$descripcionCorta}"
+                : ''
+        )
+        . "\n{$urlTicket}";
+
+    enviarWhatsapp(
+        $telefonoTecnico,
+        $apikeyTecnico,
+        $mensaje
+    );
 }

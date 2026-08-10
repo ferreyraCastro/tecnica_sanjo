@@ -605,6 +605,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                 // ============================================
+                // WHATSAPP A LOS TÉCNICOS
+                // Solo se envía a quienes ya cargaron su
+                // teléfono + apikey en su perfil. No interrumpe
+                // el flujo si falla.
+                // ============================================
+
+                try {
+
+                    notificarNuevoTicketWhatsapp(
+                        $conexion,
+                        $idSolicitud,
+                        $titulo,
+                        $prioridad
+                    );
+
+                } catch (Throwable $e) {
+
+                    error_log(
+                        'Error enviando WhatsApp de nuevo ticket: '
+                        . $e->getMessage()
+                    );
+                }
+
+
+                // ============================================
                 // MENSAJE FLASH
                 // ============================================
 

@@ -112,7 +112,8 @@ function enviarCorreo(
     string $destinatario,
     string $nombreDestinatario,
     string $asunto,
-    string $cuerpoHtml
+    string $cuerpoHtml,
+    array $adjuntos = []
 ): bool {
 
     if (!SMTP_HABILITADO) {
@@ -236,7 +237,7 @@ function enviarCorreo(
                 . ' <' . $destinatario . '>';
         }
 
-        $encabezados = [
+        $encabezadosComunes = [
 
             'Date: ' . date('r'),
 
@@ -251,18 +252,115 @@ function enviarCorreo(
                 . bin2hex(random_bytes(16))
                 . '@colegiodesanjose.edu.ar>',
 
-            'MIME-Version: 1.0',
-
-            'Content-Type: text/html; charset=UTF-8',
-
-            'Content-Transfer-Encoding: 8bit'
+            'MIME-Version: 1.0'
 
         ];
 
-        $mensajeCompleto =
-            implode(SMTP::LE, $encabezados)
-            . SMTP::LE . SMTP::LE
-            . $cuerpoHtml;
+
+        // ====================================================
+        // ADJUNTOS VÁLIDOS (archivo existente y legible)
+        // ====================================================
+
+        $adjuntosValidos = [];
+
+        foreach ($adjuntos as $adjunto) {
+
+            $ruta = $adjunto['ruta'] ?? '';
+
+            if ($ruta !== '' && is_readable($ruta)) {
+
+                $adjuntosValidos[] = $adjunto;
+            }
+        }
+
+
+        if (empty($adjuntosValidos)) {
+
+            // ================================================
+            // SIN ADJUNTOS: mensaje simple text/html
+            // ================================================
+
+            $encabezados = array_merge(
+                $encabezadosComunes,
+                [
+                    'Content-Type: text/html; charset=UTF-8',
+                    'Content-Transfer-Encoding: 8bit'
+                ]
+            );
+
+            $mensajeCompleto =
+                implode(SMTP::LE, $encabezados)
+                . SMTP::LE . SMTP::LE
+                . $cuerpoHtml;
+
+        } else {
+
+            // ================================================
+            // CON ADJUNTOS: multipart/mixed
+            // ================================================
+
+            $boundary =
+                'sanjo_'
+                . bin2hex(random_bytes(12));
+
+            $encabezados = array_merge(
+                $encabezadosComunes,
+                [
+                    'Content-Type: multipart/mixed; boundary="'
+                        . $boundary . '"'
+                ]
+            );
+
+            $cuerpo =
+                '--' . $boundary . SMTP::LE
+                . 'Content-Type: text/html; charset=UTF-8' . SMTP::LE
+                . 'Content-Transfer-Encoding: 8bit' . SMTP::LE
+                . SMTP::LE
+                . $cuerpoHtml . SMTP::LE;
+
+            foreach ($adjuntosValidos as $adjunto) {
+
+                $contenido =
+                    file_get_contents(
+                        $adjunto['ruta']
+                    );
+
+                if ($contenido === false) {
+                    continue;
+                }
+
+                $nombreAdjunto =
+                    mb_encode_mimeheader(
+                        $adjunto['nombre']
+                            ?? basename($adjunto['ruta']),
+                        'UTF-8',
+                        'B',
+                        "\r\n"
+                    );
+
+                $mimeAdjunto =
+                    $adjunto['mime']
+                    ?? 'application/octet-stream';
+
+                $cuerpo .=
+                    '--' . $boundary . SMTP::LE
+                    . 'Content-Type: ' . $mimeAdjunto
+                        . '; name="' . $nombreAdjunto . '"' . SMTP::LE
+                    . 'Content-Transfer-Encoding: base64' . SMTP::LE
+                    . 'Content-Disposition: attachment; filename="'
+                        . $nombreAdjunto . '"' . SMTP::LE
+                    . SMTP::LE
+                    . chunk_split(base64_encode($contenido))
+                    . SMTP::LE;
+            }
+
+            $cuerpo .= '--' . $boundary . '--';
+
+            $mensajeCompleto =
+                implode(SMTP::LE, $encabezados)
+                . SMTP::LE . SMTP::LE
+                . $cuerpo;
+        }
 
         if (!$smtp->data($mensajeCompleto)) {
 
@@ -313,10 +411,16 @@ function notificarNuevoTicket(
     $numero = numeroTicket($idSolicitud);
 
     $urlTicket =
-        'http://localhost'
-        . rutaBase()
-        . 'ver_solicitud.php?id='
-        . $idSolicitud;
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
+
+    $adjuntos =
+        adjuntoPrimeraFotoSolicitud(
+            $conexion,
+            $idSolicitud
+        );
 
 
     // ========================================================
@@ -339,7 +443,8 @@ function notificarNuevoTicket(
             <p>Podés seguir su estado desde el sistema.</p>',
             $urlTicket,
             'Ver mi solicitud'
-        )
+        ),
+        $adjuntos
     );
 
 
@@ -367,9 +472,147 @@ function notificarNuevoTicket(
                 . htmlspecialchars($solicitud['prioridad'] ?? '', ENT_QUOTES, 'UTF-8') . '</p>',
                 $urlTicket,
                 'Ver solicitud'
-            )
+            ),
+            $adjuntos
         );
     }
+}
+
+
+// ============================================================
+// NOTIFICAR ASIGNACIÓN DE TÉCNICO
+// Se envía al técnico que acaba de ser asignado, con una
+// breve descripción del problema y la foto si existe.
+// ============================================================
+
+function notificarAsignacion(
+    PDO $conexion,
+    array $solicitud,
+    int $idSolicitud,
+    array $tecnico
+): void {
+
+    if (!SMTP_HABILITADO) {
+        return;
+    }
+
+    $numero = numeroTicket($idSolicitud);
+
+    $urlTicket =
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
+
+    $descripcion =
+        trim((string)($solicitud['descripcion'] ?? ''));
+
+    $adjuntos =
+        adjuntoPrimeraFotoSolicitud(
+            $conexion,
+            $idSolicitud
+        );
+
+    enviarCorreo(
+        $tecnico['correo'] ?? '',
+        trim(
+            ($tecnico['nombre'] ?? '')
+            . ' ' .
+            ($tecnico['apellido'] ?? '')
+        ),
+        'Te asignaron el ticket ' . $numero,
+        plantillaCorreoHtml(
+            'Nueva asignación',
+            '<p>Te asignaron la solicitud
+            <strong>' . htmlspecialchars($numero, ENT_QUOTES, 'UTF-8') . '</strong>.</p>
+            <p><strong>Título:</strong> '
+            . htmlspecialchars($solicitud['titulo'] ?? '', ENT_QUOTES, 'UTF-8') . '<br>
+            <strong>Prioridad:</strong> '
+            . htmlspecialchars($solicitud['prioridad'] ?? '', ENT_QUOTES, 'UTF-8') . '</p>'
+            . (
+                $descripcion !== ''
+                    ? '<p style="background:#F8F8F8;border-left:3px solid #B12626;
+                       padding:10px 14px;border-radius:8px;white-space:pre-line;">'
+                       . nl2br(htmlspecialchars($descripcion, ENT_QUOTES, 'UTF-8'))
+                       . '</p>'
+                    : ''
+            )
+            . (
+                !empty($adjuntos)
+                    ? '<p style="color:#888;font-size:12px;">Se adjunta la foto del problema.</p>'
+                    : ''
+            ),
+            $urlTicket,
+            'Ver ticket'
+        ),
+        $adjuntos
+    );
+}
+
+
+// ============================================================
+// ARMAR ADJUNTO CON LA PRIMERA FOTO DE LA SOLICITUD
+// Devuelve un array listo para pasarle a enviarCorreo(), o
+// un array vacío si la solicitud no tiene fotos.
+// ============================================================
+
+function adjuntoPrimeraFotoSolicitud(
+    PDO $conexion,
+    int $idSolicitud
+): array {
+
+    $imagenes =
+        obtenerImagenesSolicitud(
+            $conexion,
+            $idSolicitud
+        );
+
+    if (empty($imagenes)) {
+        return [];
+    }
+
+    $archivo = $imagenes[0]['archivo'] ?? '';
+
+    if ($archivo === '') {
+        return [];
+    }
+
+    $ruta =
+        rtrim(UPLOAD_SOLICITUDES, DIRECTORY_SEPARATOR)
+        . DIRECTORY_SEPARATOR
+        . $archivo;
+
+    if (!is_readable($ruta)) {
+        return [];
+    }
+
+    return [
+        [
+            'ruta' => $ruta,
+            'nombre' => $archivo,
+            'mime' => mimePorExtension($archivo)
+        ]
+    ];
+}
+
+
+// ============================================================
+// MIME SEGÚN EXTENSIÓN (para adjuntos de imagen)
+// ============================================================
+
+function mimePorExtension(string $archivo): string
+{
+    $extension =
+        strtolower(
+            pathinfo($archivo, PATHINFO_EXTENSION)
+        );
+
+    return match ($extension) {
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        default => 'application/octet-stream'
+    };
 }
 
 
@@ -392,10 +635,10 @@ function notificarComentario(
     }
 
     $urlTicket =
-        'http://localhost'
-        . rutaBase()
-        . 'ver_solicitud.php?id='
-        . $idSolicitud;
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
 
     enviarCorreo(
         $correoDestinatario,

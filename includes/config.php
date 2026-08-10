@@ -404,6 +404,26 @@ define(
 
 
 // ============================================================
+// DOMINIO PÚBLICO DEL SITIO
+//
+// Se usa para armar links absolutos dentro de correos y
+// mensajes de WhatsApp (ahí no alcanza con una ruta relativa
+// como BASE_URL). En XAMPP local se puede dejar vacío: se
+// arma automáticamente con el host actual.
+//
+// En Hostinger, completar con el dominio real, por ejemplo:
+// 'https://tecnica.colegiodesanjose.edu.ar'
+// (sin barra al final, y sin /tecnica/ si el sistema queda
+// en la raíz del dominio).
+// ============================================================
+
+define(
+    'SITE_URL',
+    ''
+);
+
+
+// ============================================================
 // DIRECTORIOS DE IMÁGENES
 // ============================================================
 
@@ -664,4 +684,48 @@ function asset(
             $ruta,
             '/'
         );
+}
+
+
+// ============================================================
+// URL ABSOLUTA (CON DOMINIO)
+//
+// url() devuelve una ruta relativa ("/tecnica/x"), que sirve
+// para links dentro de las páginas pero NO sirve dentro de un
+// correo o un mensaje de WhatsApp, porque ahí no hay "página
+// actual" contra la cual resolver la ruta relativa.
+//
+// Si SITE_URL está completo (ej. en Hostinger:
+// "https://tecnica.colegiodesanjose.edu.ar") se usa ese
+// dominio. Si se deja vacío (como en XAMPP local), se arma
+// automáticamente con el host actual, para que funcione
+// igual en desarrollo.
+// ============================================================
+
+function urlAbsoluta(
+    string $ruta = ''
+): string {
+
+    if (SITE_URL !== '') {
+
+        return rtrim(SITE_URL, '/')
+            . '/'
+            . ltrim($ruta, '/');
+    }
+
+    $protocolo =
+        (
+            !empty($_SERVER['HTTPS'])
+            && $_SERVER['HTTPS'] !== 'off'
+        )
+            ? 'https://'
+            : 'http://';
+
+    $host =
+        $_SERVER['HTTP_HOST']
+        ?? 'localhost';
+
+    return $protocolo
+        . $host
+        . url($ruta);
 }

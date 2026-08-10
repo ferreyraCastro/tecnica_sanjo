@@ -191,6 +191,12 @@ if (
             )
             ?? '';
 
+        $whatsappApikey =
+            limpiarTexto(
+                $_POST['whatsapp_apikey']
+                ?? ''
+            );
+
 
         $dni =
             normalizarDni(
@@ -233,6 +239,9 @@ if (
 
             'telefono' =>
                 $telefono,
+
+            'whatsapp_apikey' =>
+                $whatsappApikey,
 
             'rol' =>
                 $rol,
@@ -289,6 +298,15 @@ if (
 
             $error =
                 'El teléfono no puede superar los 30 caracteres.';
+
+        } elseif (
+            $whatsappApikey !== ''
+            &&
+            mb_strlen($whatsappApikey) > 20
+        ) {
+
+            $error =
+                'La apikey de WhatsApp no puede superar los 20 caracteres.';
 
         } elseif (
             !in_array(
@@ -464,6 +482,7 @@ if (
                                     apellido = ?,
                                     correo = ?,
                                     telefono = ?,
+                                    whatsapp_apikey = ?,
                                     dni_hash = ?,
                                     rol = ?,
                                     estado = ?,
@@ -479,6 +498,7 @@ if (
                             $apellido,
                             $correo,
                             $telefono !== '' ? $telefono : null,
+                            $whatsappApikey !== '' ? $whatsappApikey : null,
                             $dniHash,
                             $rol,
                             $estado,
@@ -500,6 +520,7 @@ if (
                                     apellido = ?,
                                     correo = ?,
                                     telefono = ?,
+                                    whatsapp_apikey = ?,
                                     rol = ?,
                                     estado = ?,
                                     fecha_actualizacion = NOW()
@@ -514,6 +535,7 @@ if (
                             $apellido,
                             $correo,
                             $telefono !== '' ? $telefono : null,
+                            $whatsappApikey !== '' ? $whatsappApikey : null,
                             $rol,
                             $estado,
                             $idUsuario
@@ -549,6 +571,7 @@ if (
                                 apellido,
                                 correo,
                                 telefono,
+                                whatsapp_apikey,
                                 dni_hash,
                                 rol,
                                 estado,
@@ -557,6 +580,7 @@ if (
                             )
                             VALUES
                             (
+                                ?,
                                 ?,
                                 ?,
                                 ?,
@@ -576,6 +600,7 @@ if (
                         $apellido,
                         $correo,
                         $telefono !== '' ? $telefono : null,
+                        $whatsappApikey !== '' ? $whatsappApikey : null,
                         $dniHash,
                         $rol,
                         $estado
@@ -1212,6 +1237,7 @@ if (
                 apellido,
                 correo,
                 telefono,
+                whatsapp_apikey,
                 rol,
                 estado
 
@@ -1249,6 +1275,7 @@ $form =
         'apellido' => '',
         'correo' => '',
         'telefono' => '',
+        'whatsapp_apikey' => '',
         'rol' => 'Docente',
         'estado' => 'Activo'
 
@@ -2743,6 +2770,51 @@ require_once __DIR__
                                 técnicos: se usa para avisar
                                 por WhatsApp cuando llega
                                 un nuevo ticket.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- WHATSAPP APIKEY -->
+
+                        <div class="mb-3">
+
+                            <label
+                                for="whatsapp_apikey"
+                                class="form-label"
+                            >
+                                Apikey de WhatsApp (opcional)
+                            </label>
+
+                            <input
+                                type="text"
+                                name="whatsapp_apikey"
+                                id="whatsapp_apikey"
+                                class="form-control"
+                                maxlength="20"
+                                placeholder="Ej.: 123456"
+                                value="<?= e(
+                                    $form['whatsapp_apikey']
+                                    ?? ''
+                                ) ?>"
+                            >
+
+                            <div class="form-help">
+
+                                Si se completa (junto con el
+                                teléfono), los avisos de
+                                WhatsApp se envían solos, sin
+                                que la persona tenga que
+                                apretar nada. Para conseguir la
+                                apikey: desde el WhatsApp de
+                                esta persona, agregar el
+                                contacto +34 644 59 71 67
+                                (CallMeBot) y enviarle el
+                                mensaje "I allow callmebot to
+                                send me messages". El bot
+                                responde con el número de
+                                apikey.
 
                             </div>
 

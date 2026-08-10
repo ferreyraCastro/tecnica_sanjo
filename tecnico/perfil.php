@@ -55,6 +55,7 @@ $stmtUsuario = $conexion->prepare("
         apellido,
         correo,
         telefono,
+        whatsapp_apikey,
         rol,
         estado,
         ultimo_acceso,
@@ -109,6 +110,9 @@ $correo =
 
 $telefono =
     $usuario['telefono'] ?? '';
+
+$whatsappApikey =
+    $usuario['whatsapp_apikey'] ?? '';
 
 
 // ============================================================
@@ -180,6 +184,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
                 ?? '';
 
+            $whatsappApikey =
+                limpiarTexto(
+                    $_POST['whatsapp_apikey']
+                    ?? ''
+                );
+
 
             // ================================================
             // VALIDACIONES
@@ -234,6 +244,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $error =
                     'El teléfono no puede superar los 30 caracteres.';
+
+            } elseif (
+                $whatsappApikey !== ''
+                &&
+                mb_strlen($whatsappApikey) > 20
+            ) {
+
+                $error =
+                    'La apikey de WhatsApp no puede superar los 20 caracteres.';
             }
 
 
@@ -290,7 +309,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 nombre = ?,
                                 apellido = ?,
                                 correo = ?,
-                                telefono = ?
+                                telefono = ?,
+                                whatsapp_apikey = ?
 
                             WHERE id_usuario = ?
                         ");
@@ -302,6 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $apellido,
                         $correo,
                         $telefono !== '' ? $telefono : null,
+                        $whatsappApikey !== '' ? $whatsappApikey : null,
                         $idUsuario
 
                     ]);
@@ -2116,6 +2137,52 @@ require_once __DIR__
                                     puedan contactarte por WhatsApp
                                     y para que te lleguen avisos
                                     de nuevos tickets a tu celular.
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- WHATSAPP APIKEY -->
+
+                            <div class="col-12">
+
+                                <label
+                                    for="whatsapp_apikey"
+                                    class="form-label"
+                                >
+
+                                    Apikey de WhatsApp (opcional)
+
+                                </label>
+
+
+                                <input
+                                    type="text"
+                                    name="whatsapp_apikey"
+                                    id="whatsapp_apikey"
+                                    class="form-control"
+                                    maxlength="20"
+                                    placeholder="Ej.: 123456"
+                                    value="<?= e(
+                                        $whatsappApikey
+                                    ) ?>"
+                                >
+
+
+                                <div class="form-help">
+
+                                    Completá esto para que los
+                                    avisos de nuevos tickets y
+                                    asignaciones te lleguen solos
+                                    por WhatsApp, sin depender de
+                                    un botón. Pasos: agregá el
+                                    contacto +34 644 59 71 67
+                                    (CallMeBot) en tu WhatsApp y
+                                    enviale el mensaje "I allow
+                                    callmebot to send me messages".
+                                    Te va a responder con tu
+                                    apikey personal: pegala acá.
 
                                 </div>
 
