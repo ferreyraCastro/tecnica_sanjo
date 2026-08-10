@@ -1007,7 +1007,7 @@ if (estaLogueado()) {
 
 
                     <a
-                        href="<?= url('horarios.php') ?>"
+                        href="<?= url('login.php') ?>"
                         class="btn btn-horarios"
                     >
 

@@ -18,6 +18,26 @@ date_default_timezone_set(
 
 
 // ============================================================
+// DETECCIÓN DE ENTORNO (XAMPP LOCAL vs HOSTINGER)
+//
+// Permite que el mismo config.php funcione tanto en tu PC
+// como ya subido al hosting, sin tener que editar nada a
+// mano después de cada subida.
+// ============================================================
+
+$esLocal =
+    in_array(
+        $_SERVER['HTTP_HOST'] ?? '',
+        ['localhost', '127.0.0.1'],
+        true
+    )
+    || str_starts_with(
+        $_SERVER['HTTP_HOST'] ?? '',
+        'localhost:'
+    );
+
+
+// ============================================================
 // CONFIGURACIÓN DE ERRORES
 //
 // DESARROLLO LOCAL:
@@ -25,10 +45,12 @@ date_default_timezone_set(
 //
 // PRODUCCIÓN:
 // display_errors = 0
+// (los errores igual quedan registrados con error_log)
 // ============================================================
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
+ini_set('display_errors', $esLocal ? '1' : '0');
+ini_set('display_startup_errors', $esLocal ? '1' : '0');
+ini_set('log_errors', '1');
 
 error_reporting(E_ALL);
 
@@ -76,16 +98,34 @@ if (
 
 // ============================================================
 // DATOS DE BASE DE DATOS
-// XAMPP LOCAL
+//
+// Cambia automáticamente según el entorno detectado arriba.
 // ============================================================
 
-$dbHost = 'localhost';
+if ($esLocal) {
 
-$dbName = 'tecnica_sanjo';
+    // XAMPP LOCAL
 
-$dbUser = 'root';
+    $dbHost = 'localhost';
 
-$dbPass = '';
+    $dbName = 'tecnica_sanjo';
+
+    $dbUser = 'root';
+
+    $dbPass = '';
+
+} else {
+
+    // HOSTINGER (producción)
+
+    $dbHost = 'localhost';
+
+    $dbName = 'u922954738_tecnica_sanjo';
+
+    $dbUser = 'u922954738_tecnica_sanjo';
+
+    $dbPass = 'ddLFmy3Z+';
+}
 
 $dbCharset = 'utf8mb4';
 
@@ -329,7 +369,7 @@ try {
                     <p>
                         Verificá que MySQL esté iniciado
                         y que la base
-                        <strong>tecnica_sanjo</strong>
+                        <strong>' . htmlspecialchars($dbName, ENT_QUOTES, 'UTF-8') . '</strong>
                         exista.
                     </p>
 
@@ -385,21 +425,52 @@ define(
 // ============================================================
 // URL BASE
 //
-// Si la carpeta en htdocs es:
-//
-// C:\xampp\htdocs\tecnica
-//
-// URL:
-//
-// http://localhost/tecnica/
-//
-// Si le ponés otro nombre a la carpeta,
-// cambiar esta constante.
+// Se calcula sola comparando la carpeta del proyecto (BASE_PATH)
+// contra la raíz web del servidor (DOCUMENT_ROOT), así que
+// funciona tanto si el sistema queda en la raíz del dominio
+// (Hostinger, subiendo el CONTENIDO de la carpeta tecnica a
+// public_html) como si queda en una subcarpeta (XAMPP local,
+// http://localhost/tecnica/) — sin tener que tocar nada a mano
+// ni acordarse de qué entorno es.
 // ============================================================
+
+$documentRoot =
+    rtrim(
+        str_replace(
+            '\\',
+            '/',
+            $_SERVER['DOCUMENT_ROOT'] ?? ''
+        ),
+        '/'
+    );
+
+$rutaProyecto =
+    str_replace(
+        '\\',
+        '/',
+        BASE_PATH
+    );
+
+$baseUrlCalculada = '/';
+
+if (
+    $documentRoot !== ''
+    && strpos($rutaProyecto, $documentRoot) === 0
+) {
+
+    $baseUrlCalculada =
+        rtrim(
+            substr(
+                $rutaProyecto,
+                strlen($documentRoot)
+            ),
+            '/'
+        ) . '/';
+}
 
 define(
     'BASE_URL',
-    '/tecnica/'
+    $baseUrlCalculada
 );
 
 

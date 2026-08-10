@@ -3,13 +3,19 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 11-08-2026 a las 01:00:26
+-- Tiempo de generación: 11-08-2026 a las 00:37:09
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
+
+-- Evita errores de "no se puede eliminar la tabla porque
+-- está referenciada por una clave foránea" al recrear tablas
+-- que ya existan (por ejemplo, de una importación anterior
+-- que quedó a medio hacer). Se vuelve a activar al final.
+SET FOREIGN_KEY_CHECKS = 0;
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -27,6 +33,7 @@ SET time_zone = "+00:00";
 -- Estructura de tabla para la tabla `categorias`
 --
 
+DROP TABLE IF EXISTS `categorias`;
 CREATE TABLE `categorias` (
   `id_categoria` int(11) NOT NULL,
   `tipo` enum('Informatica','Mantenimiento') NOT NULL,
@@ -73,6 +80,7 @@ INSERT INTO `categorias` (`id_categoria`, `tipo`, `nombre`, `descripcion`, `acti
 -- Estructura de tabla para la tabla `comentarios`
 --
 
+DROP TABLE IF EXISTS `comentarios`;
 CREATE TABLE `comentarios` (
   `id_comentario` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -81,12 +89,14 @@ CREATE TABLE `comentarios` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `configuracion`
 --
 
+DROP TABLE IF EXISTS `configuracion`;
 CREATE TABLE `configuracion` (
   `id_configuracion` int(11) NOT NULL,
   `clave` varchar(100) NOT NULL,
@@ -109,6 +119,7 @@ INSERT INTO `configuracion` (`id_configuracion`, `clave`, `valor`, `descripcion`
 -- Estructura de tabla para la tabla `horarios_mantenimiento`
 --
 
+DROP TABLE IF EXISTS `horarios_mantenimiento`;
 CREATE TABLE `horarios_mantenimiento` (
   `id_horario` int(11) NOT NULL,
   `tipo` enum('Informatica','Mantenimiento') NOT NULL,
@@ -136,6 +147,7 @@ INSERT INTO `horarios_mantenimiento` (`id_horario`, `tipo`, `dia`, `hora_desde`,
 -- Estructura de tabla para la tabla `horarios_tecnicos`
 --
 
+DROP TABLE IF EXISTS `horarios_tecnicos`;
 CREATE TABLE `horarios_tecnicos` (
   `id_horario_tecnico` int(11) NOT NULL,
   `id_tecnico` int(11) NOT NULL,
@@ -152,6 +164,7 @@ CREATE TABLE `horarios_tecnicos` (
 -- Estructura de tabla para la tabla `horas_extra`
 --
 
+DROP TABLE IF EXISTS `horas_extra`;
 CREATE TABLE `horas_extra` (
   `id_hora_extra` int(11) NOT NULL,
   `id_tecnico` int(11) NOT NULL,
@@ -171,6 +184,7 @@ CREATE TABLE `horas_extra` (
 -- Estructura de tabla para la tabla `intervenciones`
 --
 
+DROP TABLE IF EXISTS `intervenciones`;
 CREATE TABLE `intervenciones` (
   `id_intervencion` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -187,12 +201,14 @@ CREATE TABLE `intervenciones` (
   `fecha_intervencion` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `intervencion_imagenes`
 --
 
+DROP TABLE IF EXISTS `intervencion_imagenes`;
 CREATE TABLE `intervencion_imagenes` (
   `id_imagen` int(11) NOT NULL,
   `id_intervencion` int(11) NOT NULL,
@@ -203,12 +219,14 @@ CREATE TABLE `intervencion_imagenes` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `materiales`
 --
 
+DROP TABLE IF EXISTS `materiales`;
 CREATE TABLE `materiales` (
   `id_material` int(11) NOT NULL,
   `id_solicitud` int(11) DEFAULT NULL,
@@ -229,6 +247,7 @@ CREATE TABLE `materiales` (
 -- Estructura de tabla para la tabla `mejoras`
 --
 
+DROP TABLE IF EXISTS `mejoras`;
 CREATE TABLE `mejoras` (
   `id_mejora` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
@@ -253,6 +272,7 @@ CREATE TABLE `mejoras` (
 -- Estructura de tabla para la tabla `mejora_imagenes`
 --
 
+DROP TABLE IF EXISTS `mejora_imagenes`;
 CREATE TABLE `mejora_imagenes` (
   `id_imagen` int(11) NOT NULL,
   `id_mejora` int(11) NOT NULL,
@@ -268,6 +288,7 @@ CREATE TABLE `mejora_imagenes` (
 -- Estructura de tabla para la tabla `notificaciones`
 --
 
+DROP TABLE IF EXISTS `notificaciones`;
 CREATE TABLE `notificaciones` (
   `id_notificacion` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
@@ -278,12 +299,14 @@ CREATE TABLE `notificaciones` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `repuestos`
 --
 
+DROP TABLE IF EXISTS `repuestos`;
 CREATE TABLE `repuestos` (
   `id_repuesto` int(11) NOT NULL,
   `nombre` varchar(150) NOT NULL,
@@ -313,6 +336,7 @@ INSERT INTO `repuestos` (`id_repuesto`, `nombre`, `descripcion`, `foto`, `catego
 -- Estructura de tabla para la tabla `repuestos_movimientos`
 --
 
+DROP TABLE IF EXISTS `repuestos_movimientos`;
 CREATE TABLE `repuestos_movimientos` (
   `id_movimiento` int(11) NOT NULL,
   `id_repuesto` int(11) NOT NULL,
@@ -327,12 +351,6 @@ CREATE TABLE `repuestos_movimientos` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `repuestos_movimientos`
---
-
-INSERT INTO `repuestos_movimientos` (`id_movimiento`, `id_repuesto`, `id_solicitud`, `id_intervencion`, `id_usuario`, `tipo`, `direccion`, `cantidad`, `stock_resultante`, `observaciones`, `fecha`) VALUES
-(1, 1, NULL, NULL, 2, 'Ingreso', 'Salida', 1, 1, NULL, '2026-08-10 21:31:28');
 
 -- --------------------------------------------------------
 
@@ -340,6 +358,7 @@ INSERT INTO `repuestos_movimientos` (`id_movimiento`, `id_repuesto`, `id_solicit
 -- Estructura de tabla para la tabla `sectores`
 --
 
+DROP TABLE IF EXISTS `sectores`;
 CREATE TABLE `sectores` (
   `id_sector` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -391,6 +410,7 @@ INSERT INTO `sectores` (`id_sector`, `nombre`, `tipo`, `descripcion`, `activo`, 
 -- Estructura de tabla para la tabla `solicitudes`
 --
 
+DROP TABLE IF EXISTS `solicitudes`;
 CREATE TABLE `solicitudes` (
   `id_solicitud` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
@@ -408,12 +428,14 @@ CREATE TABLE `solicitudes` (
   `fecha_resolucion` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `solicitudes_asignaciones`
 --
 
+DROP TABLE IF EXISTS `solicitudes_asignaciones`;
 CREATE TABLE `solicitudes_asignaciones` (
   `id_asignacion` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -425,12 +447,14 @@ CREATE TABLE `solicitudes_asignaciones` (
   `observaciones` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `solicitud_historial`
 --
 
+DROP TABLE IF EXISTS `solicitud_historial`;
 CREATE TABLE `solicitud_historial` (
   `id_historial` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -441,12 +465,14 @@ CREATE TABLE `solicitud_historial` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `solicitud_imagenes`
 --
 
+DROP TABLE IF EXISTS `solicitud_imagenes`;
 CREATE TABLE `solicitud_imagenes` (
   `id_imagen` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -458,12 +484,14 @@ CREATE TABLE `solicitud_imagenes` (
   `fecha` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `turnos_reparacion`
 --
 
+DROP TABLE IF EXISTS `turnos_reparacion`;
 CREATE TABLE `turnos_reparacion` (
   `id_turno` int(11) NOT NULL,
   `id_solicitud` int(11) NOT NULL,
@@ -485,6 +513,7 @@ CREATE TABLE `turnos_reparacion` (
 -- Estructura de tabla para la tabla `usuarios`
 --
 
+DROP TABLE IF EXISTS `usuarios`;
 CREATE TABLE `usuarios` (
   `id_usuario` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -515,6 +544,7 @@ INSERT INTO `usuarios` (`id_usuario`, `nombre`, `apellido`, `correo`, `telefono`
 -- Estructura Stand-in para la vista `vista_estadisticas`
 -- (Véase abajo para la vista actual)
 --
+DROP TABLE IF EXISTS `vista_estadisticas`;
 CREATE TABLE `vista_estadisticas` (
 `total` bigint(21)
 ,`nuevas` decimal(22,0)
@@ -530,6 +560,7 @@ CREATE TABLE `vista_estadisticas` (
 -- Estructura Stand-in para la vista `vista_pendientes`
 -- (Véase abajo para la vista actual)
 --
+DROP TABLE IF EXISTS `vista_pendientes`;
 CREATE TABLE `vista_pendientes` (
 `id_solicitud` int(11)
 ,`tipo` enum('Informatica','Mantenimiento')
@@ -547,6 +578,7 @@ CREATE TABLE `vista_pendientes` (
 -- Estructura Stand-in para la vista `vista_solicitudes`
 -- (Véase abajo para la vista actual)
 --
+DROP TABLE IF EXISTS `vista_solicitudes`;
 CREATE TABLE `vista_solicitudes` (
 `id_solicitud` int(11)
 ,`tipo` enum('Informatica','Mantenimiento')
@@ -571,6 +603,7 @@ CREATE TABLE `vista_solicitudes` (
 -- Estructura Stand-in para la vista `vista_stock_bajo`
 -- (Véase abajo para la vista actual)
 --
+DROP TABLE IF EXISTS `vista_stock_bajo`;
 CREATE TABLE `vista_stock_bajo` (
 `id_repuesto` int(11)
 ,`nombre` varchar(150)
@@ -592,6 +625,7 @@ CREATE TABLE `vista_stock_bajo` (
 -- Estructura Stand-in para la vista `vista_turnos`
 -- (Véase abajo para la vista actual)
 --
+DROP TABLE IF EXISTS `vista_turnos`;
 CREATE TABLE `vista_turnos` (
 `id_turno` int(11)
 ,`id_solicitud` int(11)
@@ -618,7 +652,7 @@ CREATE TABLE `vista_turnos` (
 --
 DROP TABLE IF EXISTS `vista_estadisticas`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_estadisticas`  AS SELECT count(0) AS `total`, sum(case when `solicitudes`.`estado` = 'Nueva' then 1 else 0 end) AS `nuevas`, sum(case when `solicitudes`.`estado` = 'En proceso' then 1 else 0 end) AS `en_proceso`, sum(case when `solicitudes`.`estado` = 'Pendiente' then 1 else 0 end) AS `pendientes`, sum(case when `solicitudes`.`estado` = 'Resuelta' then 1 else 0 end) AS `resueltas`, sum(case when `solicitudes`.`estado` = 'Cerrada' then 1 else 0 end) AS `cerradas` FROM `solicitudes` ;
+CREATE VIEW `vista_estadisticas`  AS SELECT count(0) AS `total`, sum(case when `solicitudes`.`estado` = 'Nueva' then 1 else 0 end) AS `nuevas`, sum(case when `solicitudes`.`estado` = 'En proceso' then 1 else 0 end) AS `en_proceso`, sum(case when `solicitudes`.`estado` = 'Pendiente' then 1 else 0 end) AS `pendientes`, sum(case when `solicitudes`.`estado` = 'Resuelta' then 1 else 0 end) AS `resueltas`, sum(case when `solicitudes`.`estado` = 'Cerrada' then 1 else 0 end) AS `cerradas` FROM `solicitudes` ;
 
 -- --------------------------------------------------------
 
@@ -627,7 +661,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `vista_pendientes`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_pendientes`  AS SELECT `s`.`id_solicitud` AS `id_solicitud`, `s`.`tipo` AS `tipo`, `s`.`titulo` AS `titulo`, `s`.`prioridad` AS `prioridad`, `s`.`motivo_pendiente` AS `motivo_pendiente`, `s`.`fecha_creacion` AS `fecha_creacion`, concat(`u`.`nombre`,' ',`u`.`apellido`) AS `solicitante`, `sec`.`nombre` AS `sector` FROM ((`solicitudes` `s` join `usuarios` `u` on(`s`.`id_usuario` = `u`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) WHERE `s`.`estado` = 'Pendiente' ;
+CREATE VIEW `vista_pendientes`  AS SELECT `s`.`id_solicitud` AS `id_solicitud`, `s`.`tipo` AS `tipo`, `s`.`titulo` AS `titulo`, `s`.`prioridad` AS `prioridad`, `s`.`motivo_pendiente` AS `motivo_pendiente`, `s`.`fecha_creacion` AS `fecha_creacion`, concat(`u`.`nombre`,' ',`u`.`apellido`) AS `solicitante`, `sec`.`nombre` AS `sector` FROM ((`solicitudes` `s` join `usuarios` `u` on(`s`.`id_usuario` = `u`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) WHERE `s`.`estado` = 'Pendiente' ;
 
 -- --------------------------------------------------------
 
@@ -636,7 +670,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `vista_solicitudes`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_solicitudes`  AS SELECT `s`.`id_solicitud` AS `id_solicitud`, `s`.`tipo` AS `tipo`, `s`.`titulo` AS `titulo`, `s`.`descripcion` AS `descripcion`, `s`.`prioridad` AS `prioridad`, `s`.`estado` AS `estado`, `s`.`motivo_pendiente` AS `motivo_pendiente`, `s`.`fecha_creacion` AS `fecha_creacion`, `s`.`fecha_actualizacion` AS `fecha_actualizacion`, `s`.`fecha_resolucion` AS `fecha_resolucion`, `u`.`id_usuario` AS `id_usuario`, concat(`u`.`nombre`,' ',`u`.`apellido`) AS `docente`, `u`.`correo` AS `correo`, `sec`.`nombre` AS `sector`, `c`.`nombre` AS `categoria` FROM (((`solicitudes` `s` join `usuarios` `u` on(`s`.`id_usuario` = `u`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) left join `categorias` `c` on(`s`.`id_categoria` = `c`.`id_categoria`)) ;
+CREATE VIEW `vista_solicitudes`  AS SELECT `s`.`id_solicitud` AS `id_solicitud`, `s`.`tipo` AS `tipo`, `s`.`titulo` AS `titulo`, `s`.`descripcion` AS `descripcion`, `s`.`prioridad` AS `prioridad`, `s`.`estado` AS `estado`, `s`.`motivo_pendiente` AS `motivo_pendiente`, `s`.`fecha_creacion` AS `fecha_creacion`, `s`.`fecha_actualizacion` AS `fecha_actualizacion`, `s`.`fecha_resolucion` AS `fecha_resolucion`, `u`.`id_usuario` AS `id_usuario`, concat(`u`.`nombre`,' ',`u`.`apellido`) AS `docente`, `u`.`correo` AS `correo`, `sec`.`nombre` AS `sector`, `c`.`nombre` AS `categoria` FROM (((`solicitudes` `s` join `usuarios` `u` on(`s`.`id_usuario` = `u`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) left join `categorias` `c` on(`s`.`id_categoria` = `c`.`id_categoria`)) ;
 
 -- --------------------------------------------------------
 
@@ -645,7 +679,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `vista_stock_bajo`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_stock_bajo`  AS SELECT `repuestos`.`id_repuesto` AS `id_repuesto`, `repuestos`.`nombre` AS `nombre`, `repuestos`.`descripcion` AS `descripcion`, `repuestos`.`categoria` AS `categoria`, `repuestos`.`unidad` AS `unidad`, `repuestos`.`stock_actual` AS `stock_actual`, `repuestos`.`stock_minimo` AS `stock_minimo`, `repuestos`.`costo_unitario` AS `costo_unitario`, `repuestos`.`ubicacion` AS `ubicacion`, `repuestos`.`activo` AS `activo`, `repuestos`.`fecha_creacion` AS `fecha_creacion`, `repuestos`.`fecha_actualizacion` AS `fecha_actualizacion` FROM `repuestos` WHERE `repuestos`.`activo` = 1 AND `repuestos`.`stock_actual` <= `repuestos`.`stock_minimo` ;
+CREATE VIEW `vista_stock_bajo`  AS SELECT `repuestos`.`id_repuesto` AS `id_repuesto`, `repuestos`.`nombre` AS `nombre`, `repuestos`.`descripcion` AS `descripcion`, `repuestos`.`categoria` AS `categoria`, `repuestos`.`unidad` AS `unidad`, `repuestos`.`stock_actual` AS `stock_actual`, `repuestos`.`stock_minimo` AS `stock_minimo`, `repuestos`.`costo_unitario` AS `costo_unitario`, `repuestos`.`ubicacion` AS `ubicacion`, `repuestos`.`activo` AS `activo`, `repuestos`.`fecha_creacion` AS `fecha_creacion`, `repuestos`.`fecha_actualizacion` AS `fecha_actualizacion` FROM `repuestos` WHERE `repuestos`.`activo` = 1 AND `repuestos`.`stock_actual` <= `repuestos`.`stock_minimo` ;
 
 -- --------------------------------------------------------
 
@@ -654,7 +688,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `vista_turnos`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_turnos`  AS SELECT `t`.`id_turno` AS `id_turno`, `t`.`id_solicitud` AS `id_solicitud`, `t`.`id_tecnico` AS `id_tecnico`, `t`.`fecha` AS `fecha`, `t`.`hora_desde` AS `hora_desde`, `t`.`hora_hasta` AS `hora_hasta`, `t`.`horas_estimadas` AS `horas_estimadas`, `t`.`estado` AS `estado`, `t`.`motivo_reprogramacion` AS `motivo_reprogramacion`, `s`.`titulo` AS `titulo`, `s`.`tipo` AS `tipo`, `s`.`prioridad` AS `prioridad`, `s`.`estado` AS `estado_solicitud`, concat(`td`.`nombre`,' ',`td`.`apellido`) AS `tecnico`, concat(`ud`.`nombre`,' ',`ud`.`apellido`) AS `docente`, `sec`.`nombre` AS `sector` FROM ((((`turnos_reparacion` `t` join `solicitudes` `s` on(`t`.`id_solicitud` = `s`.`id_solicitud`)) join `usuarios` `td` on(`t`.`id_tecnico` = `td`.`id_usuario`)) join `usuarios` `ud` on(`s`.`id_usuario` = `ud`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) ;
+CREATE VIEW `vista_turnos`  AS SELECT `t`.`id_turno` AS `id_turno`, `t`.`id_solicitud` AS `id_solicitud`, `t`.`id_tecnico` AS `id_tecnico`, `t`.`fecha` AS `fecha`, `t`.`hora_desde` AS `hora_desde`, `t`.`hora_hasta` AS `hora_hasta`, `t`.`horas_estimadas` AS `horas_estimadas`, `t`.`estado` AS `estado`, `t`.`motivo_reprogramacion` AS `motivo_reprogramacion`, `s`.`titulo` AS `titulo`, `s`.`tipo` AS `tipo`, `s`.`prioridad` AS `prioridad`, `s`.`estado` AS `estado_solicitud`, concat(`td`.`nombre`,' ',`td`.`apellido`) AS `tecnico`, concat(`ud`.`nombre`,' ',`ud`.`apellido`) AS `docente`, `sec`.`nombre` AS `sector` FROM ((((`turnos_reparacion` `t` join `solicitudes` `s` on(`t`.`id_solicitud` = `s`.`id_solicitud`)) join `usuarios` `td` on(`t`.`id_tecnico` = `td`.`id_usuario`)) join `usuarios` `ud` on(`s`.`id_usuario` = `ud`.`id_usuario`)) left join `sectores` `sec` on(`s`.`id_sector` = `sec`.`id_sector`)) ;
 
 --
 -- Índices para tablas volcadas
@@ -914,7 +948,7 @@ ALTER TABLE `repuestos`
 -- AUTO_INCREMENT de la tabla `repuestos_movimientos`
 --
 ALTER TABLE `repuestos_movimientos`
-  MODIFY `id_movimiento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_movimiento` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `sectores`
@@ -1070,6 +1104,9 @@ ALTER TABLE `turnos_reparacion`
   ADD CONSTRAINT `fk_turno_origen` FOREIGN KEY (`id_turno_origen`) REFERENCES `turnos_reparacion` (`id_turno`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_turno_solicitud` FOREIGN KEY (`id_solicitud`) REFERENCES `solicitudes` (`id_solicitud`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_turno_tecnico` FOREIGN KEY (`id_tecnico`) REFERENCES `usuarios` (`id_usuario`);
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
