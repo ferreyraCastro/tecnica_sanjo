@@ -687,6 +687,46 @@ require_once __DIR__
 
 }
 
+
+.repuesto-thumb {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 8px;
+
+    object-fit: cover;
+
+    border: 1px solid #EEEEEE;
+
+}
+
+
+.repuesto-thumb-placeholder {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 8px;
+
+    background: #FAFAFA;
+
+    border: 1px solid #EEEEEE;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #CCCCCC;
+
+    font-size: 18px;
+
+}
+
 </style>
 
 
@@ -1106,6 +1146,7 @@ require_once __DIR__
 
                             <thead>
                                 <tr>
+                                    <th>Foto</th>
                                     <th>Nombre</th>
                                     <th>Categoría</th>
                                     <th>Stock</th>
@@ -1130,6 +1171,29 @@ require_once __DIR__
                                     ?>
 
                                     <tr class="<?= $bajo ? 'fila-stock-bajo' : '' ?>">
+
+                                        <td>
+
+                                            <?php if (!empty($repuesto['foto'])): ?>
+
+                                                <img
+                                                    src="<?= e(
+                                                        UPLOAD_REPUESTOS_URL
+                                                        . $repuesto['foto']
+                                                    ) ?>"
+                                                    class="repuesto-thumb"
+                                                    alt=""
+                                                >
+
+                                            <?php else: ?>
+
+                                                <span class="repuesto-thumb-placeholder">
+                                                    <i class="bi bi-image"></i>
+                                                </span>
+
+                                            <?php endif; ?>
+
+                                        </td>
 
                                         <td>
 
@@ -1244,6 +1308,7 @@ require_once __DIR__
                                     <th>Tipo</th>
                                     <th>Cantidad</th>
                                     <th>Stock resultante</th>
+                                    <th>Ticket</th>
                                     <th>Usuario</th>
                                 </tr>
                             </thead>
@@ -1284,6 +1349,31 @@ require_once __DIR__
 
                                         <td>
                                             <?= (int)$movimiento['stock_resultante'] ?>
+                                        </td>
+
+                                        <td>
+
+                                            <?php if (!empty($movimiento['id_solicitud'])): ?>
+
+                                                <a
+                                                    href="<?= url(
+                                                        'ver_solicitud.php?id='
+                                                        . (int)$movimiento['id_solicitud']
+                                                    ) ?>"
+                                                >
+                                                    <?= e(
+                                                        numeroTicket(
+                                                            (int)$movimiento['id_solicitud']
+                                                        )
+                                                    ) ?>
+                                                </a>
+
+                                            <?php else: ?>
+
+                                                <span class="text-muted">-</span>
+
+                                            <?php endif; ?>
+
                                         </td>
 
                                         <td>

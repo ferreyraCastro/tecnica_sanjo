@@ -3176,43 +3176,11 @@ require_once __DIR__ . '/../includes/header.php';
 
                                 <!-- =========================
                                      ADMINISTRADOR
+                                     (no interviene: gestiona
+                                     usuarios/asignaciones/
+                                     horarios; ve el detalle
+                                     desde "Ver")
                                 ========================== -->
-
-                                <?php if (
-                                    $rolActual ===
-                                    'Administrador'
-
-                                    &&
-                                    !in_array(
-                                        $solicitud[
-                                            'estado'
-                                        ],
-                                        [
-                                            'Cerrada',
-                                            'Cancelada'
-                                        ],
-                                        true
-                                    )
-                                ): ?>
-
-
-                                    <a
-                                        href="<?= url(
-                                            'tecnico/intervenir.php?id='
-                                            .
-                                            $idSolicitud
-                                        ) ?>"
-                                        class="btn-ticket btn-intervenir"
-                                    >
-
-                                        <i class="bi bi-tools"></i>
-
-                                        Intervenir
-
-                                    </a>
-
-
-                                <?php endif; ?>
 
 
                             </div>

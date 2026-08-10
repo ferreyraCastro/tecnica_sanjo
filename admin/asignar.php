@@ -577,7 +577,7 @@ if (
                             (
                                 id_solicitud,
                                 id_tecnico,
-                                id_asignado_por,
+                                asignado_por,
                                 observaciones,
                                 activo,
                                 fecha_asignacion
@@ -970,7 +970,7 @@ $stmtHistorialAsignaciones =
                t.id_usuario
 
         LEFT JOIN usuarios a
-            ON sa.id_asignado_por =
+            ON sa.asignado_por =
                a.id_usuario
 
         WHERE

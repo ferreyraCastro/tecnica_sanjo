@@ -7,6 +7,7 @@ $usuario=$_SESSION["usuario"] ?? null;
 
 $__rolNav = $usuario['rol'] ?? '';
 $__esTecnicoAdminNav = in_array($__rolNav, ['Tecnico', 'Administrador'], true);
+$__esSoloTecnicoNav = $__rolNav === 'Tecnico';
 
 $__hrefDashboard = url(function_exists('rutaDashboardRol') ? rutaDashboardRol() : 'dashboard.php');
 
@@ -226,6 +227,10 @@ Dashboard
 Solicitudes
 </a>
 </li>
+
+<?php endif; ?>
+
+<?php if ($__esSoloTecnicoNav): ?>
 
 <li class="nav-item">
 <a class="nav-link" href="<?= htmlspecialchars($__hrefInformatica) ?>">

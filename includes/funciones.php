@@ -282,6 +282,94 @@ function obtenerSector(
 
 
 // ============================================================
+// CREAR SECTOR
+// ============================================================
+
+function crearSector(
+    PDO $conexion,
+    array $datos
+): int|false {
+
+    $sql = "
+        INSERT INTO sectores
+        (
+            nombre,
+            tipo,
+            descripcion,
+            activo
+        )
+        VALUES
+        (
+            ?,
+            ?,
+            ?,
+            ?
+        )
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    $ok = $stmt->execute([
+
+        $datos['nombre'],
+
+        $datos['tipo'],
+
+        (($datos['descripcion'] ?? '') !== '')
+            ? $datos['descripcion']
+            : null,
+
+        (int)($datos['activo'] ?? 1)
+
+    ]);
+
+    return $ok
+        ? (int)$conexion->lastInsertId()
+        : false;
+}
+
+
+// ============================================================
+// ACTUALIZAR SECTOR
+// ============================================================
+
+function actualizarSector(
+    PDO $conexion,
+    int $idSector,
+    array $datos
+): bool {
+
+    $sql = "
+        UPDATE sectores
+        SET
+            nombre = ?,
+            tipo = ?,
+            descripcion = ?,
+            activo = ?
+        WHERE id_sector = ?
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    return $stmt->execute([
+
+        $datos['nombre'],
+
+        $datos['tipo'],
+
+        (($datos['descripcion'] ?? '') !== '')
+            ? $datos['descripcion']
+            : null,
+
+        (int)($datos['activo'] ?? 1),
+
+        $idSector
+
+    ]);
+}
+
+
+// ============================================================
 // OBTENER CATEGORÍAS POR TIPO
 // Informatica / Mantenimiento
 // ============================================================
@@ -2244,6 +2332,7 @@ function crearRepuesto(
         (
             nombre,
             descripcion,
+            foto,
             categoria,
             unidad,
             stock_actual,
@@ -2254,6 +2343,7 @@ function crearRepuesto(
         )
         VALUES
         (
+            ?,
             ?,
             ?,
             ?,
@@ -2274,6 +2364,10 @@ function crearRepuesto(
 
         (($datos['descripcion'] ?? '') !== '')
             ? $datos['descripcion']
+            : null,
+
+        (($datos['foto'] ?? '') !== '')
+            ? $datos['foto']
             : null,
 
         $datos['categoria'],
@@ -2322,6 +2416,7 @@ function actualizarRepuesto(
         SET
             nombre = ?,
             descripcion = ?,
+            foto = ?,
             categoria = ?,
             unidad = ?,
             stock_minimo = ?,
@@ -2339,6 +2434,10 @@ function actualizarRepuesto(
 
         (($datos['descripcion'] ?? '') !== '')
             ? $datos['descripcion']
+            : null,
+
+        (($datos['foto'] ?? '') !== '')
+            ? $datos['foto']
             : null,
 
         $datos['categoria'],

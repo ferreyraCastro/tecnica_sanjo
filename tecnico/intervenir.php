@@ -20,6 +20,39 @@ requerirTecnico();
 
 
 // ============================================================
+// EL ADMINISTRADOR NO INTERVIENE SOLICITUDES
+//
+// El administrador gestiona usuarios, asigna técnicos y
+// configura horarios, pero la reparación en sí la hace
+// siempre el técnico. El admin puede ver el detalle desde
+// ver_solicitud.php.
+// ============================================================
+
+if (
+    ($_SESSION['usuario']['rol'] ?? '') === 'Administrador'
+) {
+
+    flash(
+        'info',
+        'Los administradores no registran intervenciones. '
+        . 'Esa tarea la realiza el técnico asignado; '
+        . 'podés ver el estado de la solicitud desde su detalle.'
+    );
+
+    header(
+        'Location: '
+        . url('ver_solicitud.php?id=' . (int)(
+            $_GET['id']
+            ?? $_POST['id_solicitud']
+            ?? 0
+        ))
+    );
+
+    exit;
+}
+
+
+// ============================================================
 // USUARIO ACTIVO
 // ============================================================
 
@@ -165,15 +198,12 @@ if (!$solicitud) {
 // ============================================================
 // VERIFICAR ASIGNACIÓN
 //
-// Administrador puede intervenir cualquier solicitud.
-// Técnico solamente una solicitud actualmente asignada.
+// A esta altura ya sabemos que es Técnico (el Administrador
+// fue redirigido más arriba). Solo puede intervenir una
+// solicitud que esté actualmente asignada a su usuario.
 // ============================================================
 
-$esAdministrador =
-    $rolActual === 'Administrador';
-
-
-if (!$esAdministrador) {
+{
 
     $stmtAsignacion =
         $conexion->prepare("
@@ -247,14 +277,14 @@ $stmtImagenesSolicitud =
             id_imagen,
             archivo,
             descripcion,
-            fecha_creacion
+            fecha
 
         FROM solicitud_imagenes
 
         WHERE id_solicitud = ?
 
         ORDER BY
-            fecha_creacion ASC
+            fecha ASC
     ");
 
 
@@ -965,18 +995,15 @@ if (
 
                 // =============================================
                 // PREPARAR DIRECTORIO DE IMÁGENES
+                //
+                // Mismo directorio "plano" que usa el resto
+                // de la aplicación (UPLOAD_INTERVENCIONES /
+                // UPLOAD_INTERVENCIONES_URL), sin subcarpeta
+                // por solicitud, para que ver_solicitud.php
+                // pueda encontrar el archivo.
                 // =============================================
 
-                $rutaFisica =
-                    dirname(__DIR__)
-                    . '/uploads/intervenciones/'
-                    . $idSolicitud;
-
-
-                $rutaBDBase =
-                    'uploads/intervenciones/'
-                    . $idSolicitud
-                    . '/';
+                $rutaFisica = UPLOAD_INTERVENCIONES;
 
 
                 if (
@@ -1054,11 +1081,6 @@ if (
                     }
 
 
-                    $rutaBD =
-                        $rutaBDBase
-                        . $nombreArchivo;
-
-
                     $stmtImagen =
                         $conexion->prepare("
                             INSERT INTO intervencion_imagenes
@@ -1066,7 +1088,7 @@ if (
                                 id_intervencion,
                                 archivo,
                                 descripcion,
-                                fecha_creacion
+                                fecha
                             )
                             VALUES
                             (
@@ -1080,7 +1102,7 @@ if (
 
                     $stmtImagen->execute([
                         $idIntervencion,
-                        $rutaBD
+                        $nombreArchivo
                     ]);
                 }
 
@@ -2738,21 +2760,19 @@ input[value="pendiente"]:checked
                                 <div
                                     class="image-card js-imagen"
                                     data-imagen="<?= e(
-                                        url(
-                                            $imagen[
-                                                'archivo'
-                                            ]
-                                        )
+                                        UPLOAD_SOLICITUDES_URL
+                                        . $imagen[
+                                            'archivo'
+                                        ]
                                     ) ?>"
                                 >
 
                                     <img
                                         src="<?= e(
-                                            url(
-                                                $imagen[
-                                                    'archivo'
-                                                ]
-                                            )
+                                            UPLOAD_SOLICITUDES_URL
+                                            . $imagen[
+                                                'archivo'
+                                            ]
                                         ) ?>"
                                         alt="Imagen del pedido"
                                         loading="lazy"

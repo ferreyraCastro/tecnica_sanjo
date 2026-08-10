@@ -434,6 +434,13 @@ define(
 );
 
 
+define(
+    'UPLOAD_REPUESTOS',
+    UPLOAD_PATH .
+    '/repuestos'
+);
+
+
 // ============================================================
 // URL DE IMÁGENES
 // ============================================================
@@ -463,6 +470,13 @@ define(
     'UPLOAD_MEJORAS_URL',
     UPLOAD_URL .
     'mejoras/'
+);
+
+
+define(
+    'UPLOAD_REPUESTOS_URL',
+    UPLOAD_URL .
+    'repuestos/'
 );
 
 
@@ -581,7 +595,9 @@ $directoriosUpload = [
 
     UPLOAD_INTERVENCIONES,
 
-    UPLOAD_MEJORAS
+    UPLOAD_MEJORAS,
+
+    UPLOAD_REPUESTOS
 
 ];
 

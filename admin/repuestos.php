@@ -159,6 +159,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? 1
                 : 0;
 
+        $quitarFoto =
+            isset($_POST['quitar_foto']);
+
+
+        // ====================================================
+        // FOTO ACTUAL (si estamos editando)
+        // ====================================================
+
+        $fotoActual = '';
+
+        if ($idRepuesto > 0) {
+
+            $repuestoExistente =
+                obtenerRepuesto(
+                    $conexion,
+                    $idRepuesto
+                );
+
+            $fotoActual =
+                $repuestoExistente['foto']
+                ?? '';
+        }
+
+        $foto = $fotoActual;
+
 
         // ====================================================
         // VALIDACIONES
@@ -207,6 +232,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         // ====================================================
+        // FOTO NUEVA / QUITAR FOTO
+        // ====================================================
+
+        if (
+            $error === ''
+            &&
+            $quitarFoto
+            &&
+            $foto !== ''
+        ) {
+
+            @unlink(
+                rtrim(UPLOAD_REPUESTOS, DIRECTORY_SEPARATOR)
+                . DIRECTORY_SEPARATOR
+                . $foto
+            );
+
+            $foto = '';
+        }
+
+
+        if (
+            $error === ''
+            &&
+            !empty($_FILES['foto']['name'] ?? '')
+        ) {
+
+            $resultadoFoto =
+                subirImagen(
+                    $_FILES['foto'],
+                    UPLOAD_REPUESTOS,
+                    MAX_IMAGEN_MB
+                );
+
+            if ($resultadoFoto['ok']) {
+
+                if ($foto !== '') {
+
+                    @unlink(
+                        rtrim(UPLOAD_REPUESTOS, DIRECTORY_SEPARATOR)
+                        . DIRECTORY_SEPARATOR
+                        . $foto
+                    );
+                }
+
+                $foto = $resultadoFoto['archivo'];
+
+            } else {
+
+                $error = $resultadoFoto['error'];
+            }
+        }
+
+
+        // ====================================================
         // GUARDAR
         // ====================================================
 
@@ -215,6 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos = [
                 'nombre' => $nombre,
                 'descripcion' => $descripcion,
+                'foto' => $foto,
                 'categoria' => $categoria,
                 'unidad' => $unidad,
                 'stock_actual' => $stockActual,
@@ -276,6 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'id_repuesto' => $idRepuesto,
             'nombre' => $nombre,
             'descripcion' => $descripcion,
+            'foto' => $foto,
             'categoria' => $categoria,
             'unidad' => $unidad,
             'stock_actual' => $stockActual,
@@ -362,6 +444,7 @@ if (
             'id_repuesto' => (int)$repuestoBD['id_repuesto'],
             'nombre' => $repuestoBD['nombre'],
             'descripcion' => $repuestoBD['descripcion'] ?? '',
+            'foto' => $repuestoBD['foto'] ?? '',
             'categoria' => $repuestoBD['categoria'],
             'unidad' => $repuestoBD['unidad'],
             'stock_actual' => (int)$repuestoBD['stock_actual'],
@@ -378,6 +461,7 @@ $form = $editarRepuesto ?? [
     'id_repuesto' => 0,
     'nombre' => '',
     'descripcion' => '',
+    'foto' => '',
     'categoria' => 'Informatica',
     'unidad' => 'unidad',
     'stock_actual' => 0,
@@ -808,6 +892,61 @@ require_once __DIR__
 }
 
 
+.repuesto-foto-actual img {
+
+    width: 100%;
+
+    max-width: 160px;
+
+    border-radius: 10px;
+
+    border: 1px solid #EEEEEE;
+
+    display: block;
+
+}
+
+
+.repuesto-thumb {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 8px;
+
+    object-fit: cover;
+
+    border: 1px solid #EEEEEE;
+
+}
+
+
+.repuesto-thumb-placeholder {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 8px;
+
+    background: #FAFAFA;
+
+    border: 1px solid #EEEEEE;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #CCCCCC;
+
+    font-size: 18px;
+
+}
+
+
 .empty {
 
     padding: 40px 20px;
@@ -955,6 +1094,7 @@ require_once __DIR__
                     <form
                         method="POST"
                         action="<?= url('admin/repuestos.php') ?>"
+                        enctype="multipart/form-data"
                     >
 
                         <?= csrfInput() ?>
@@ -970,6 +1110,63 @@ require_once __DIR__
                             name="id_repuesto"
                             value="<?= (int)$form['id_repuesto'] ?>"
                         >
+
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Foto
+                            </label>
+
+                            <?php if (!empty($form['foto'])): ?>
+
+                                <div class="repuesto-foto-actual">
+
+                                    <img
+                                        src="<?= e(
+                                            UPLOAD_REPUESTOS_URL
+                                            . $form['foto']
+                                        ) ?>"
+                                        alt="Foto actual"
+                                    >
+
+                                    <div class="form-check mt-2">
+
+                                        <input
+                                            type="checkbox"
+                                            name="quitar_foto"
+                                            value="1"
+                                            id="quitar_foto"
+                                            class="form-check-input"
+                                        >
+
+                                        <label
+                                            class="form-check-label"
+                                            for="quitar_foto"
+                                            style="font-size:12px;"
+                                        >
+                                            Quitar foto actual
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+                            <?php endif; ?>
+
+                            <input
+                                type="file"
+                                name="foto"
+                                id="foto"
+                                class="form-control mt-2"
+                                accept="image/png,image/jpeg,image/webp"
+                            >
+
+                            <div class="form-text">
+                                JPG, PNG o WEBP. Máximo <?= (int)MAX_IMAGEN_MB ?> MB.
+                            </div>
+
+                        </div>
 
 
                         <div class="mb-3">
@@ -1269,6 +1466,7 @@ require_once __DIR__
 
                             <thead>
                                 <tr>
+                                    <th>Foto</th>
                                     <th>Nombre</th>
                                     <th>Categoría</th>
                                     <th>Stock</th>
@@ -1287,6 +1485,29 @@ require_once __DIR__
                                 ): ?>
 
                                     <tr>
+
+                                        <td>
+
+                                            <?php if (!empty($repuesto['foto'])): ?>
+
+                                                <img
+                                                    src="<?= e(
+                                                        UPLOAD_REPUESTOS_URL
+                                                        . $repuesto['foto']
+                                                    ) ?>"
+                                                    class="repuesto-thumb"
+                                                    alt=""
+                                                >
+
+                                            <?php else: ?>
+
+                                                <span class="repuesto-thumb-placeholder">
+                                                    <i class="bi bi-image"></i>
+                                                </span>
+
+                                            <?php endif; ?>
+
+                                        </td>
 
                                         <td>
                                             <strong><?= e($repuesto['nombre']) ?></strong>

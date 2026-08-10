@@ -1720,6 +1720,90 @@ require_once __DIR__
                     </a>
 
 
+                    <a
+                        href="<?= url(
+                            'admin/repuestos.php'
+                        ) ?>"
+                        class="admin-access"
+                    >
+
+                        <div class="admin-access-icon">
+
+                            <i class="bi bi-box-seam"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Catálogo de repuestos
+                            </strong>
+
+                            <small>
+                                Nombre, stock, foto y costo
+                            </small>
+
+                        </div>
+
+                    </a>
+
+
+                    <a
+                        href="<?= url(
+                            'admin/horarios_tecnicos.php'
+                        ) ?>"
+                        class="admin-access"
+                    >
+
+                        <div class="admin-access-icon">
+
+                            <i class="bi bi-person-workspace"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Horarios de técnicos
+                            </strong>
+
+                            <small>
+                                Días y horas de trabajo por técnico
+                            </small>
+
+                        </div>
+
+                    </a>
+
+
+                    <a
+                        href="<?= url(
+                            'admin/horas_extra.php'
+                        ) ?>"
+                        class="admin-access"
+                    >
+
+                        <div class="admin-access-icon">
+
+                            <i class="bi bi-hourglass-split"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Horas extra
+                            </strong>
+
+                            <small>
+                                Compensaciones y horas fuera de horario
+                            </small>
+
+                        </div>
+
+                    </a>
+
+
                 </div>
 
             </div>

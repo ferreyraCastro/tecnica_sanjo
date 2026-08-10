@@ -20,6 +20,39 @@ requerirTecnico();
 
 
 // ============================================================
+// EL ADMINISTRADOR NO FINALIZA SOLICITUDES
+//
+// El administrador gestiona usuarios, asigna técnicos y
+// configura horarios, pero la reparación en sí la hace
+// siempre el técnico. El admin puede ver el detalle desde
+// ver_solicitud.php.
+// ============================================================
+
+if (
+    ($_SESSION['usuario']['rol'] ?? '') === 'Administrador'
+) {
+
+    flash(
+        'info',
+        'Los administradores no finalizan intervenciones. '
+        . 'Esa tarea la realiza el técnico asignado; '
+        . 'podés ver el estado de la solicitud desde su detalle.'
+    );
+
+    header(
+        'Location: '
+        . url('ver_solicitud.php?id=' . (int)(
+            $_GET['id']
+            ?? $_POST['id_solicitud']
+            ?? 0
+        ))
+    );
+
+    exit;
+}
+
+
+// ============================================================
 // VERIFICAR USUARIO ACTIVO
 // ============================================================
 
@@ -46,9 +79,6 @@ $idTecnico =
 $rolActual =
     $_SESSION['usuario']['rol']
     ?? '';
-
-$esAdministrador =
-    $rolActual === 'Administrador';
 
 
 // ============================================================
@@ -178,7 +208,7 @@ $stmtAsignacion =
 
             sa.id_asignacion,
             sa.id_tecnico,
-            sa.id_asignado_por,
+            sa.asignado_por,
             sa.observaciones,
             sa.fecha_asignacion,
 
@@ -223,35 +253,30 @@ $asignacion =
 // ============================================================
 // VERIFICAR PERMISOS
 //
-// Un técnico solamente puede finalizar una solicitud que esté
-// asignada actualmente a él.
-//
-// Un administrador puede realizar el cierre aunque la
-// asignación corresponda a otro técnico.
+// A esta altura ya sabemos que es Técnico (el Administrador
+// fue redirigido más arriba). Solo puede finalizar una
+// solicitud que esté asignada actualmente a él.
 // ============================================================
 
-if (!$esAdministrador) {
+if (
+    !$asignacion
+    ||
+    (int)$asignacion[
+        'id_tecnico'
+    ] !== $idTecnico
+) {
 
-    if (
-        !$asignacion
-        ||
-        (int)$asignacion[
-            'id_tecnico'
-        ] !== $idTecnico
-    ) {
+    flash(
+        'error',
+        'No podés finalizar una solicitud que no está asignada a tu usuario.'
+    );
 
-        flash(
-            'error',
-            'No podés finalizar una solicitud que no está asignada a tu usuario.'
-        );
+    header(
+        'Location: '
+        . url('tecnico/solicitudes.php')
+    );
 
-        header(
-            'Location: '
-            . url('tecnico/solicitudes.php')
-        );
-
-        exit;
-    }
+    exit;
 }
 
 
@@ -601,8 +626,6 @@ if (
                 'La solicitud ya no tiene una asignación activa.';
 
         } elseif (
-            !$esAdministrador
-            &&
             (int)$asignacionActual[
                 'id_tecnico'
             ] !== $idTecnico
@@ -775,7 +798,7 @@ if (
                             id_solicitud,
                             id_usuario,
                             comentario,
-                            fecha_creacion
+                            fecha
                         )
                         VALUES
                         (

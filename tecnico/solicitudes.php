@@ -882,6 +882,14 @@ function puedeIntervenirSolicitudTecnico(
     bool $esAdministrador
 ): bool {
 
+    // El administrador no interviene solicitudes: solo
+    // gestiona usuarios, asigna técnicos y ve el estado.
+    if ($esAdministrador) {
+
+        return false;
+    }
+
+
     if (
         in_array(
             $solicitud['estado'],
@@ -894,12 +902,6 @@ function puedeIntervenirSolicitudTecnico(
     ) {
 
         return false;
-    }
-
-
-    if ($esAdministrador) {
-
-        return true;
     }
 
 
