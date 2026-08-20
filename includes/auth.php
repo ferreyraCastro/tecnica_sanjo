@@ -224,7 +224,14 @@ function tieneAlgunoDeLosRoles(
 
 function rutaBase(): string
 {
-    return '/tecnica/';
+    // Se apoya en BASE_URL (definida dinámicamente en
+    // includes/config.php según el entorno: XAMPP local o
+    // Hostinger), para que este archivo funcione igual en
+    // los dos entornos sin tener que editarlo a mano.
+
+    return defined('BASE_URL')
+        ? BASE_URL
+        : '/';
 }
 
 

@@ -8,20 +8,62 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/funciones.php';
 require_once __DIR__ . '/includes/auth.php';
 
 
 // ============================================================
-// SI YA ESTÁ LOGUEADO, IR AL DASHBOARD
+// index.php ES EL PANEL PRINCIPAL DEL SISTEMA
+//
+// A quien no inició sesión se le muestra la presentación
+// habitual de la plataforma. A quien sí inició sesión se le
+// suma, más abajo, el estado en vivo de las intervenciones
+// (Intervenciones / Pendientes / Finalizadas), tomado
+// directamente de la base de datos.
 // ============================================================
 
-if (estaLogueado()) {
+$mostrarPanelInicio = estaLogueado();
 
-    header(
-        'Location: ' . url('dashboard.php')
-    );
+$usuarioActual = $mostrarPanelInicio ? usuarioActual() : null;
 
-    exit;
+$intervencionesActivas = [];
+$pendientesInicio = [];
+$finalizadasInicio = [];
+$sectoresPanelInicio = [];
+
+if ($mostrarPanelInicio) {
+
+    $intervencionesActivas = obtenerIntervencionesActivas($conexion);
+
+    $pendientesInicio = obtenerPendientes($conexion);
+
+    $finalizadasInicio = obtenerFinalizadas($conexion);
+
+
+    // Lista de aulas/sectores presentes en los datos mostrados,
+    // para armar el filtro por curso.
+
+    foreach (
+        [
+            $intervencionesActivas,
+            $pendientesInicio,
+            $finalizadasInicio
+        ]
+        as $listaPanelInicio
+    ) {
+
+        foreach ($listaPanelInicio as $filaPanelInicio) {
+
+            $sectorPanelInicio = $filaPanelInicio['sector'] ?? '';
+
+            if ($sectorPanelInicio !== '') {
+
+                $sectoresPanelInicio[$sectorPanelInicio] = true;
+            }
+        }
+    }
+
+    ksort($sectoresPanelInicio);
 }
 ?>
 <!doctype html>
@@ -40,6 +82,14 @@ if (estaLogueado()) {
     <title>
         Gestión Técnica | Colegio San José
     </title>
+
+
+    <!-- Favicon -->
+
+    <link rel="icon" type="image/x-icon" href="<?= asset('img/favicon.ico') ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= asset('img/favicon-32x32.png') ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= asset('img/favicon-16x16.png') ?>">
+    <link rel="apple-touch-icon" href="<?= asset('img/apple-touch-icon.png') ?>">
 
 
     <!-- Bootstrap -->
@@ -189,6 +239,35 @@ if (estaLogueado()) {
             background: #F2F2F2;
 
             color: #B12626;
+
+        }
+
+
+        .btn-salir-top {
+
+            background: transparent;
+
+            color: #FFFFFF;
+
+            border:
+                1px solid rgba(255,255,255,.55);
+
+            font-weight: 600;
+
+            border-radius: 10px;
+
+            padding:
+                9px 18px;
+
+        }
+
+
+        .btn-salir-top:hover {
+
+            background:
+                rgba(255,255,255,.12);
+
+            color: #FFFFFF;
 
         }
 
@@ -628,6 +707,258 @@ if (estaLogueado()) {
 
 
         /* =====================================================
+           PANEL DE INICIO (Intervenciones / Pendientes / Finalizadas)
+        ===================================================== */
+
+        .panel-inicio {
+
+            background: #FFFFFF;
+
+        }
+
+
+        .panel-inicio-caja {
+
+            background: #FFFFFF;
+
+            border:
+                1px solid #EEEEEE;
+
+            border-radius: 20px;
+
+            box-shadow:
+                0 7px 25px
+                rgba(0,0,0,.06);
+
+            overflow: hidden;
+
+        }
+
+
+        .panel-inicio-filtro {
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding:
+                18px 22px;
+
+            border-bottom:
+                1px solid #EEEEEE;
+
+            background: #FBFBFB;
+
+        }
+
+
+        .panel-inicio-filtro label {
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            color: #760000;
+
+            margin: 0;
+
+        }
+
+
+        .panel-inicio-filtro select {
+
+            min-height: 42px;
+
+            border-radius: 9px;
+
+            border:
+                1px solid #DDDDDD;
+
+            padding:
+                6px 12px;
+
+            font-size: 14px;
+
+            max-width: 280px;
+
+        }
+
+
+        .panel-inicio-tabs {
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 6px;
+
+            padding:
+                14px 22px 0;
+
+        }
+
+
+        .panel-inicio-tab {
+
+            border: none;
+
+            background: #F5F6F8;
+
+            color: #616161;
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+            padding:
+                10px 18px;
+
+            border-radius:
+                10px 10px 0 0;
+
+        }
+
+
+        .panel-inicio-tab.activo {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #760000,
+                    #B12626
+                );
+
+            color: #FFFFFF;
+
+        }
+
+
+        .panel-inicio-tab .badge {
+
+            margin-left: 6px;
+
+        }
+
+
+        .panel-inicio-contenido {
+
+            padding:
+                20px 22px 26px;
+
+        }
+
+
+        .panel-inicio-tabla-wrap {
+
+            display: none;
+
+            overflow-x: auto;
+
+        }
+
+
+        .panel-inicio-tabla-wrap.activo {
+
+            display: block;
+
+        }
+
+
+        .panel-inicio-tabla-wrap table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            font-size: 13.5px;
+
+        }
+
+
+        .panel-inicio-tabla-wrap th {
+
+            text-align: left;
+
+            color: #760000;
+
+            font-size: 12px;
+
+            text-transform: uppercase;
+
+            letter-spacing: .03em;
+
+            padding:
+                10px 12px;
+
+            border-bottom:
+                2px solid #F0F0F0;
+
+            white-space: nowrap;
+
+        }
+
+
+        .panel-inicio-tabla-wrap td {
+
+            padding:
+                12px;
+
+            border-bottom:
+                1px solid #F2F2F2;
+
+            vertical-align: top;
+
+        }
+
+
+        .panel-inicio-tabla-wrap tr:last-child td {
+
+            border-bottom: none;
+
+        }
+
+
+        .panel-inicio-ticket {
+
+            font-weight: 700;
+
+            color: #760000;
+
+            white-space: nowrap;
+
+        }
+
+
+        .panel-inicio-vacio {
+
+            padding:
+                40px 20px;
+
+            text-align: center;
+
+            color: #999999;
+
+        }
+
+
+        .panel-inicio-vacio i {
+
+            display: block;
+
+            font-size: 32px;
+
+            color: #DDDDDD;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        /* =====================================================
            PASOS
         ===================================================== */
 
@@ -921,16 +1252,52 @@ if (estaLogueado()) {
             </a>
 
 
-            <a
-                href="<?= url('login.php') ?>"
-                class="btn btn-ingresar-top"
-            >
+            <?php if ($mostrarPanelInicio): ?>
 
-                <i class="bi bi-person-lock me-1"></i>
+                <div
+                    class="d-flex
+                           align-items-center
+                           gap-2"
+                >
 
-                Ingresar
+                    <a
+                        href="<?= url(rutaDashboardRol()) ?>"
+                        class="btn btn-ingresar-top"
+                    >
 
-            </a>
+                        <i class="bi bi-grid me-1"></i>
+
+                        Mi panel
+
+                    </a>
+
+                    <a
+                        href="<?= url('logout.php') ?>"
+                        class="btn btn-salir-top"
+                    >
+
+                        <i class="bi bi-box-arrow-right me-1"></i>
+
+                        Salir
+
+                    </a>
+
+                </div>
+
+            <?php else: ?>
+
+                <a
+                    href="<?= url('login.php') ?>"
+                    class="btn btn-ingresar-top"
+                >
+
+                    <i class="bi bi-person-lock me-1"></i>
+
+                    Ingresar
+
+                </a>
+
+            <?php endif; ?>
 
         </div>
 
@@ -1298,6 +1665,410 @@ if (estaLogueado()) {
     </div>
 
 </section>
+
+
+
+<?php if ($mostrarPanelInicio): ?>
+
+<!-- =========================================================
+     PANEL DE INICIO
+     Intervenciones / Pendientes / Finalizadas
+========================================================= -->
+
+<section class="seccion panel-inicio">
+
+    <div class="container">
+
+        <div class="titulo-seccion">
+
+            <h2>
+                Estado de las intervenciones
+            </h2>
+
+            <p>
+                Seguimiento en vivo de los pedidos registrados,
+                actualizado directamente desde la base de datos.
+                Filtrá por aula o curso para ver si ya existe
+                un reclamo activo antes de cargar uno nuevo.
+            </p>
+
+        </div>
+
+
+        <div class="panel-inicio-caja">
+
+            <div class="panel-inicio-filtro">
+
+                <label for="panelInicioFiltroAula">
+                    <i class="bi bi-funnel me-1"></i>
+                    Filtrar por aula / curso
+                </label>
+
+                <select
+                    id="panelInicioFiltroAula"
+                    onchange="panelInicioFiltrar()"
+                >
+
+                    <option value="">
+                        Todas las aulas / sectores
+                    </option>
+
+                    <?php foreach (array_keys($sectoresPanelInicio) as $sectorOpcion): ?>
+
+                        <option value="<?= e($sectorOpcion) ?>">
+                            <?= e($sectorOpcion) ?>
+                        </option>
+
+                    <?php endforeach; ?>
+
+                </select>
+
+            </div>
+
+
+            <div class="panel-inicio-tabs">
+
+                <button
+                    type="button"
+                    class="panel-inicio-tab activo"
+                    data-panel="intervenciones"
+                    onclick="panelInicioMostrar('intervenciones')"
+                >
+                    Intervenciones
+                    <span class="badge bg-light text-dark">
+                        <?= count($intervencionesActivas) ?>
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    class="panel-inicio-tab"
+                    data-panel="pendientes"
+                    onclick="panelInicioMostrar('pendientes')"
+                >
+                    Pendientes
+                    <span class="badge bg-light text-dark">
+                        <?= count($pendientesInicio) ?>
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    class="panel-inicio-tab"
+                    data-panel="finalizadas"
+                    onclick="panelInicioMostrar('finalizadas')"
+                >
+                    Finalizadas
+                    <span class="badge bg-light text-dark">
+                        <?= count($finalizadasInicio) ?>
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="panel-inicio-contenido">
+
+
+                <!-- INTERVENCIONES -->
+
+                <div
+                    class="panel-inicio-tabla-wrap activo"
+                    data-panel="intervenciones"
+                >
+
+                    <?php if (empty($intervencionesActivas)): ?>
+
+                        <div class="panel-inicio-vacio">
+                            <i class="bi bi-check2-circle"></i>
+                            No hay intervenciones en curso en este momento.
+                        </div>
+
+                    <?php else: ?>
+
+                        <table>
+
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Problema</th>
+                                    <th>Aula / sector</th>
+                                    <th>Equipo</th>
+                                    <th>Técnico</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <?php foreach ($intervencionesActivas as $fila): ?>
+
+                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
+
+                                        <td class="panel-inicio-ticket">
+                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['titulo']) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['sector'] ?? '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['equipo'] ?? '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(
+                                                trim($fila['tecnico_asignado'] ?? '') !== ''
+                                                    ? $fila['tecnico_asignado']
+                                                    : 'Sin asignar'
+                                            ) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(fechaCorta($fila['fecha_actualizacion'])) ?>
+                                        </td>
+
+                                        <td>
+                                            <span class="badge <?= claseEstado($fila['estado']) ?>">
+                                                <?= e($fila['estado']) ?>
+                                            </span>
+                                        </td>
+
+                                    </tr>
+
+                                <?php endforeach; ?>
+
+                            </tbody>
+
+                        </table>
+
+                    <?php endif; ?>
+
+                </div>
+
+
+                <!-- PENDIENTES -->
+
+                <div
+                    class="panel-inicio-tabla-wrap"
+                    data-panel="pendientes"
+                >
+
+                    <?php if (empty($pendientesInicio)): ?>
+
+                        <div class="panel-inicio-vacio">
+                            <i class="bi bi-hourglass-split"></i>
+                            No hay solicitudes pendientes en este momento.
+                        </div>
+
+                    <?php else: ?>
+
+                        <table>
+
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Problema</th>
+                                    <th>Aula / sector</th>
+                                    <th>Motivo</th>
+                                    <th>Técnico</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <?php foreach ($pendientesInicio as $fila): ?>
+
+                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
+
+                                        <td class="panel-inicio-ticket">
+                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['titulo']) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['sector'] ?? '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(
+                                                $fila['tipo_pendiente']
+                                                    ?? $fila['motivo_pendiente']
+                                                    ?? 'Sin especificar'
+                                            ) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(
+                                                trim($fila['tecnico_asignado'] ?? '') !== ''
+                                                    ? $fila['tecnico_asignado']
+                                                    : 'Sin asignar'
+                                            ) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(fechaCorta($fila['fecha_actualizacion'])) ?>
+                                        </td>
+
+                                    </tr>
+
+                                <?php endforeach; ?>
+
+                            </tbody>
+
+                        </table>
+
+                    <?php endif; ?>
+
+                </div>
+
+
+                <!-- FINALIZADAS -->
+
+                <div
+                    class="panel-inicio-tabla-wrap"
+                    data-panel="finalizadas"
+                >
+
+                    <?php if (empty($finalizadasInicio)): ?>
+
+                        <div class="panel-inicio-vacio">
+                            <i class="bi bi-clipboard-check"></i>
+                            Todavía no hay intervenciones finalizadas.
+                        </div>
+
+                    <?php else: ?>
+
+                        <table>
+
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Problema informado</th>
+                                    <th>Aula / sector</th>
+                                    <th>Trabajo realizado</th>
+                                    <th>Técnico</th>
+                                    <th>Fecha de finalización</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <?php foreach ($finalizadasInicio as $fila): ?>
+
+                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
+
+                                        <td class="panel-inicio-ticket">
+                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['titulo']) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['sector'] ?? '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['trabajo_realizado'] ?? 'Sin detalle registrado') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(
+                                                trim($fila['tecnico_responsable'] ?? '') !== ''
+                                                    ? $fila['tecnico_responsable']
+                                                    : '-'
+                                            ) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(
+                                                fechaCorta(
+                                                    $fila['fecha_fin']
+                                                        ?? $fila['fecha_resolucion']
+                                                        ?? $fila['fecha_actualizacion']
+                                                )
+                                            ) ?>
+                                        </td>
+
+                                    </tr>
+
+                                <?php endforeach; ?>
+
+                            </tbody>
+
+                        </table>
+
+                    <?php endif; ?>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<script>
+
+function panelInicioMostrar(nombre) {
+
+    document
+        .querySelectorAll('.panel-inicio-tab')
+        .forEach(function (boton) {
+            boton.classList.toggle(
+                'activo',
+                boton.dataset.panel === nombre
+            );
+        });
+
+    document
+        .querySelectorAll('.panel-inicio-tabla-wrap')
+        .forEach(function (tabla) {
+            tabla.classList.toggle(
+                'activo',
+                tabla.dataset.panel === nombre
+            );
+        });
+}
+
+
+function panelInicioFiltrar() {
+
+    var sector = document
+        .getElementById('panelInicioFiltroAula')
+        .value;
+
+    document
+        .querySelectorAll('.panel-inicio-tabla-wrap tbody tr')
+        .forEach(function (fila) {
+
+            var coincide =
+                sector === '' ||
+                fila.dataset.sector === sector;
+
+            fila.style.display = coincide ? '' : 'none';
+        });
+}
+
+</script>
+
+<?php endif; ?>
 
 
 

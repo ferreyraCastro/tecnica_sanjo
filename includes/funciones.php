@@ -3829,6 +3829,194 @@ function obtenerPendientes(
 
 
 // ============================================================
+// INTERVENCIONES ACTIVAS (panel de inicio)
+//
+// Solicitudes que el área técnica está atendiendo en este
+// momento: recién creadas, ya asignadas a un técnico, o en
+// proceso. No incluye las que están Pendientes (tienen su
+// propio panel) ni las ya Resueltas/Cerradas/Canceladas.
+// ============================================================
+
+function obtenerIntervencionesActivas(
+    PDO $conexion,
+    ?int $idUsuarioDocente = null
+): array {
+
+    $sql = "
+        SELECT
+            s.id_solicitud,
+
+            s.titulo,
+
+            s.descripcion,
+
+            s.estado,
+
+            s.prioridad,
+
+            s.id_sector,
+
+            s.fecha_creacion,
+
+            s.fecha_actualizacion,
+
+            sec.nombre AS sector,
+
+            c.nombre AS equipo,
+
+            CONCAT(
+                t.nombre,
+                ' ',
+                t.apellido
+            ) AS tecnico_asignado
+
+        FROM solicitudes s
+
+        LEFT JOIN sectores sec
+            ON s.id_sector = sec.id_sector
+
+        LEFT JOIN categorias c
+            ON s.id_categoria = c.id_categoria
+
+        LEFT JOIN solicitudes_asignaciones sa
+            ON sa.id_solicitud = s.id_solicitud
+            AND sa.activo = 1
+
+        LEFT JOIN usuarios t
+            ON sa.id_tecnico = t.id_usuario
+
+        WHERE s.estado IN (
+            'Nueva',
+            'Asignada',
+            'En proceso'
+        )
+    ";
+
+    $parametros = [];
+
+    if ($idUsuarioDocente !== null) {
+
+        $sql .= "
+            AND s.id_usuario = ?
+        ";
+
+        $parametros[] = $idUsuarioDocente;
+    }
+
+    $sql .= "
+        ORDER BY
+            s.fecha_actualizacion DESC
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    $stmt->execute($parametros);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+// ============================================================
+// INTERVENCIONES FINALIZADAS (panel de inicio)
+//
+// Solicitudes ya solucionadas y cerradas, con el resumen del
+// trabajo realizado (tomado de la última intervención cargada
+// para esa solicitud, si existe).
+// ============================================================
+
+function obtenerFinalizadas(
+    PDO $conexion,
+    ?int $idUsuarioDocente = null,
+    int $limite = 30
+): array {
+
+    $sql = "
+        SELECT
+            s.id_solicitud,
+
+            s.titulo,
+
+            s.descripcion,
+
+            s.estado,
+
+            s.id_sector,
+
+            s.fecha_resolucion,
+
+            s.fecha_actualizacion,
+
+            sec.nombre AS sector,
+
+            i.trabajo_realizado,
+
+            i.fecha_fin,
+
+            CONCAT(
+                t.nombre,
+                ' ',
+                t.apellido
+            ) AS tecnico_responsable
+
+        FROM solicitudes s
+
+        LEFT JOIN sectores sec
+            ON s.id_sector = sec.id_sector
+
+        LEFT JOIN (
+            SELECT iv.*
+            FROM intervenciones iv
+            INNER JOIN (
+                SELECT
+                    id_solicitud,
+                    MAX(id_intervencion) AS id_intervencion
+                FROM intervenciones
+                GROUP BY id_solicitud
+            ) ultima
+                ON ultima.id_solicitud = iv.id_solicitud
+                AND ultima.id_intervencion = iv.id_intervencion
+        ) i
+            ON i.id_solicitud = s.id_solicitud
+
+        LEFT JOIN usuarios t
+            ON i.id_tecnico = t.id_usuario
+
+        WHERE s.estado IN (
+            'Resuelta',
+            'Cerrada'
+        )
+    ";
+
+    $parametros = [];
+
+    if ($idUsuarioDocente !== null) {
+
+        $sql .= "
+            AND s.id_usuario = ?
+        ";
+
+        $parametros[] = $idUsuarioDocente;
+    }
+
+    $sql .= "
+        ORDER BY
+            COALESCE(
+                s.fecha_resolucion,
+                s.fecha_actualizacion
+            ) DESC
+
+        LIMIT " . $limite . "
+    ";
+
+    $stmt = $conexion->prepare($sql);
+
+    $stmt->execute($parametros);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+// ============================================================
 // CLASE CSS PARA TIPO DE PENDIENTE
 // ============================================================
 

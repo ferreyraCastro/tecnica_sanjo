@@ -37,24 +37,6 @@ if (!verificarUsuarioActivo($conexion)) {
 
 
 // ============================================================
-// OBTENER HORARIOS
-// ============================================================
-
-$horariosInformatica =
-    obtenerHorarios(
-        $conexion,
-        'Informatica'
-    );
-
-
-$horariosMantenimiento =
-    obtenerHorarios(
-        $conexion,
-        'Mantenimiento'
-    );
-
-
-// ============================================================
 // DÍAS
 // ============================================================
 
@@ -69,59 +51,44 @@ $dias = [
 
 
 // ============================================================
-// AGRUPAR HORARIOS POR DÍA
+// TÉCNICOS Y SU HORARIO SEMANAL
+//
+// Se arma, para cada técnico activo, su horario ya agrupado
+// por día (tal como lo carga admin/horarios_tecnicos.php o el
+// propio técnico desde tecnico/horario.php). Todo sale de la
+// base de datos: para modificarlo no hace falta tocar código.
 // ============================================================
 
-$informaticaPorDia = [];
+$tecnicosConHorario = [];
 
-$mantenimientoPorDia = [];
+foreach (obtenerTecnicos($conexion) as $tecnico) {
 
+    $horarioTecnico =
+        obtenerHorarioTecnico(
+            $conexion,
+            (int)$tecnico['id_usuario']
+        );
 
-foreach ($dias as $dia) {
+    $horarioPorDia = [];
 
-    $informaticaPorDia[$dia] = [];
+    foreach ($dias as $dia) {
 
-    $mantenimientoPorDia[$dia] = [];
-}
-
-
-foreach (
-    $horariosInformatica
-    as $horario
-) {
-
-    if (
-        isset(
-            $informaticaPorDia[
-                $horario['dia']
-            ]
-        )
-    ) {
-
-        $informaticaPorDia[
-            $horario['dia']
-        ][] = $horario;
+        $horarioPorDia[$dia] = [];
     }
-}
 
+    foreach ($horarioTecnico as $franja) {
 
-foreach (
-    $horariosMantenimiento
-    as $horario
-) {
+        if (isset($horarioPorDia[$franja['dia']])) {
 
-    if (
-        isset(
-            $mantenimientoPorDia[
-                $horario['dia']
-            ]
-        )
-    ) {
-
-        $mantenimientoPorDia[
-            $horario['dia']
-        ][] = $horario;
+            $horarioPorDia[$franja['dia']][] = $franja;
+        }
     }
+
+    $tecnicosConHorario[] = [
+        'tecnico' => $tecnico,
+        'por_dia' => $horarioPorDia,
+        'total' => count($horarioTecnico)
+    ];
 }
 
 
@@ -413,7 +380,11 @@ require_once __DIR__
         1px solid
         rgba(255,255,255,.20);
 
-    font-size: 23px;
+    font-size: 18px;
+
+    font-weight: 800;
+
+    letter-spacing: .02em;
 
 }
 
@@ -866,15 +837,15 @@ require_once __DIR__
 
                         <i class="bi bi-calendar-week me-1"></i>
 
-                        Horarios de atención
+                        Horarios de los técnicos
 
                     </h1>
 
                     <p>
 
-                        Consultá los horarios disponibles
-                        para intervenciones de informática
-                        y mantenimiento general.
+                        Consultá el horario de trabajo
+                        de cada técnico, organizado
+                        por día y horario.
 
                     </p>
 
@@ -929,467 +900,166 @@ require_once __DIR__
     <div class="row g-4">
 
 
-        <!-- =================================================
-             INFORMÁTICA
-        ================================================== -->
+        <?php if (empty($tecnicosConHorario)): ?>
 
-        <div class="col-xl-6">
+            <div class="col-12">
 
-            <section class="area-card">
+                <div class="sin-horario">
 
+                    <i class="bi bi-person-x"></i>
 
-                <div class="area-header informatica">
-
-                    <div class="area-icon">
-
-                        <i class="bi bi-pc-display"></i>
-
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            Informática
-                        </h3>
-
-                        <p>
-
-                            Computadoras, red, WiFi,
-                            software, proyectores,
-                            impresoras y equipamiento.
-
-                        </p>
-
-                    </div>
+                    Todavía no hay técnicos activos con horario cargado.
 
                 </div>
 
+            </div>
 
-                <div class="area-body">
-
-
-                    <?php foreach (
-                        $dias
-                        as $dia
-                    ): ?>
-
-                        <?php
-
-                        $horariosDia =
-                            $informaticaPorDia[
-                                $dia
-                            ]
-                            ?? [];
-
-                        ?>
+        <?php endif; ?>
 
 
-                        <div class="dia-card">
+        <?php foreach ($tecnicosConHorario as $entradaTecnico): ?>
+
+            <?php
+
+            $tecnico = $entradaTecnico['tecnico'];
+
+            $horarioPorDia = $entradaTecnico['por_dia'];
+
+            $iniciales =
+                mb_strtoupper(mb_substr($tecnico['nombre'], 0, 1))
+                . mb_strtoupper(mb_substr($tecnico['apellido'], 0, 1));
+
+            ?>
+
+            <div class="col-xl-6">
+
+                <section class="area-card">
 
 
-                            <div class="dia-header">
+                    <div class="area-header informatica">
 
-                                <div class="dia-nombre">
+                        <div class="area-icon">
 
-                                    <i class="bi bi-calendar3"></i>
+                            <?= e($iniciales) ?>
 
-                                    <?= e(
-                                        $dia === 'Miercoles'
-                                        ? 'Miércoles'
-                                        : $dia
-                                    ) ?>
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                <?= e($tecnico['nombre'] . ' ' . $tecnico['apellido']) ?>
+                            </h3>
+
+                            <p>
+
+                                <?= $entradaTecnico['total'] ?>
+                                <?= $entradaTecnico['total'] === 1 ? 'horario cargado' : 'horarios cargados' ?>
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="area-body">
+
+
+                        <?php foreach ($dias as $dia): ?>
+
+                            <?php $horariosDia = $horarioPorDia[$dia] ?? []; ?>
+
+                            <div class="dia-card">
+
+
+                                <div class="dia-header">
+
+                                    <div class="dia-nombre">
+
+                                        <i class="bi bi-calendar3"></i>
+
+                                        <?= e($dia === 'Miercoles' ? 'Miércoles' : $dia) ?>
+
+                                    </div>
+
+
+                                    <div class="dia-cantidad">
+
+                                        <?= count($horariosDia) ?>
+                                        <?= count($horariosDia) === 1 ? 'horario' : 'horarios' ?>
+
+                                    </div>
 
                                 </div>
 
 
-                                <div class="dia-cantidad">
+                                <?php if (empty($horariosDia)): ?>
 
-                                    <?= count(
-                                        $horariosDia
-                                    ) ?>
+                                    <div class="sin-horario">
 
-                                    <?= count(
-                                        $horariosDia
-                                    ) === 1
-                                        ? 'horario'
-                                        : 'horarios'
-                                    ?>
+                                        <i class="bi bi-dash-circle"></i>
 
-                                </div>
+                                        Sin horario publicado
 
-                            </div>
+                                    </div>
 
+                                <?php else: ?>
 
-                            <?php if (
-                                empty(
-                                    $horariosDia
-                                )
-                            ): ?>
+                                    <div class="horario-lista">
 
-                                <div class="sin-horario">
+                                        <?php foreach ($horariosDia as $franja): ?>
 
-                                    <i class="bi bi-dash-circle"></i>
+                                            <div class="horario-fila">
 
-                                    Sin horario publicado
+                                                <div class="horario-principal">
 
-                                </div>
+                                                    <div class="hora-icon">
 
-
-                            <?php else: ?>
-
-
-                                <div class="horario-lista">
-
-
-                                    <?php foreach (
-                                        $horariosDia
-                                        as $horario
-                                    ): ?>
-
-                                        <div class="horario-fila">
-
-
-                                            <div class="horario-principal">
-
-                                                <div class="hora-icon">
-
-                                                    <i class="bi bi-clock"></i>
-
-                                                </div>
-
-
-                                                <div>
-
-                                                    <div class="hora-texto">
-
-                                                        <?= e(
-                                                            horaCorta(
-                                                                $horario[
-                                                                    'hora_desde'
-                                                                ]
-                                                            )
-                                                        ) ?>
-
-                                                        a
-
-                                                        <?= e(
-                                                            horaCorta(
-                                                                $horario[
-                                                                    'hora_hasta'
-                                                                ]
-                                                            )
-                                                        ) ?>
+                                                        <i class="bi bi-clock"></i>
 
                                                     </div>
 
 
-                                                    <?php if (
-                                                        !empty(
-                                                            $horario[
-                                                                'responsable'
-                                                            ]
-                                                        )
-                                                    ): ?>
+                                                    <div>
 
-                                                        <div class="responsable">
+                                                        <div class="hora-texto">
 
-                                                            <i class="bi bi-person me-1"></i>
-
-                                                            <?= e(
-                                                                $horario[
-                                                                    'responsable'
-                                                                ]
-                                                            ) ?>
+                                                            <?= e(horaCorta($franja['hora_desde'])) ?>
+                                                            a
+                                                            <?= e(horaCorta($franja['hora_hasta'])) ?>
 
                                                         </div>
-
-                                                    <?php endif; ?>
-
-
-                                                    <?php if (
-                                                        !empty(
-                                                            $horario[
-                                                                'observaciones'
-                                                            ]
-                                                        )
-                                                    ): ?>
-
-                                                        <div class="observacion">
-
-                                                            <?= e(
-                                                                $horario[
-                                                                    'observaciones'
-                                                                ]
-                                                            ) ?>
-
-                                                        </div>
-
-                                                    <?php endif; ?>
-
-                                                </div>
-
-                                            </div>
-
-
-                                            <span class="badge-activo">
-
-                                                Disponible
-
-                                            </span>
-
-
-                                        </div>
-
-                                    <?php endforeach; ?>
-
-
-                                </div>
-
-                            <?php endif; ?>
-
-
-                        </div>
-
-                    <?php endforeach; ?>
-
-
-                </div>
-
-            </section>
-
-        </div>
-
-
-
-        <!-- =================================================
-             MANTENIMIENTO
-        ================================================== -->
-
-        <div class="col-xl-6">
-
-            <section class="area-card">
-
-
-                <div class="area-header mantenimiento">
-
-                    <div class="area-icon">
-
-                        <i class="bi bi-tools"></i>
-
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            Mantenimiento general
-                        </h3>
-
-                        <p>
-
-                            Electricidad, iluminación,
-                            mobiliario, puertas, ventanas,
-                            agua y reparaciones generales.
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="area-body">
-
-
-                    <?php foreach (
-                        $dias
-                        as $dia
-                    ): ?>
-
-                        <?php
-
-                        $horariosDia =
-                            $mantenimientoPorDia[
-                                $dia
-                            ]
-                            ?? [];
-
-                        ?>
-
-
-                        <div class="dia-card">
-
-
-                            <div class="dia-header">
-
-                                <div class="dia-nombre">
-
-                                    <i class="bi bi-calendar3"></i>
-
-                                    <?= e(
-                                        $dia === 'Miercoles'
-                                        ? 'Miércoles'
-                                        : $dia
-                                    ) ?>
-
-                                </div>
-
-
-                                <div class="dia-cantidad">
-
-                                    <?= count(
-                                        $horariosDia
-                                    ) ?>
-
-                                    <?= count(
-                                        $horariosDia
-                                    ) === 1
-                                        ? 'horario'
-                                        : 'horarios'
-                                    ?>
-
-                                </div>
-
-                            </div>
-
-
-                            <?php if (
-                                empty(
-                                    $horariosDia
-                                )
-                            ): ?>
-
-                                <div class="sin-horario">
-
-                                    <i class="bi bi-dash-circle"></i>
-
-                                    Sin horario publicado
-
-                                </div>
-
-
-                            <?php else: ?>
-
-
-                                <div class="horario-lista">
-
-
-                                    <?php foreach (
-                                        $horariosDia
-                                        as $horario
-                                    ): ?>
-
-                                        <div class="horario-fila">
-
-
-                                            <div class="horario-principal">
-
-                                                <div class="hora-icon">
-
-                                                    <i class="bi bi-clock"></i>
-
-                                                </div>
-
-
-                                                <div>
-
-                                                    <div class="hora-texto">
-
-                                                        <?= e(
-                                                            horaCorta(
-                                                                $horario[
-                                                                    'hora_desde'
-                                                                ]
-                                                            )
-                                                        ) ?>
-
-                                                        a
-
-                                                        <?= e(
-                                                            horaCorta(
-                                                                $horario[
-                                                                    'hora_hasta'
-                                                                ]
-                                                            )
-                                                        ) ?>
 
                                                     </div>
 
-
-                                                    <?php if (
-                                                        !empty(
-                                                            $horario[
-                                                                'responsable'
-                                                            ]
-                                                        )
-                                                    ): ?>
-
-                                                        <div class="responsable">
-
-                                                            <i class="bi bi-person me-1"></i>
-
-                                                            <?= e(
-                                                                $horario[
-                                                                    'responsable'
-                                                                ]
-                                                            ) ?>
-
-                                                        </div>
-
-                                                    <?php endif; ?>
-
-
-                                                    <?php if (
-                                                        !empty(
-                                                            $horario[
-                                                                'observaciones'
-                                                            ]
-                                                        )
-                                                    ): ?>
-
-                                                        <div class="observacion">
-
-                                                            <?= e(
-                                                                $horario[
-                                                                    'observaciones'
-                                                                ]
-                                                            ) ?>
-
-                                                        </div>
-
-                                                    <?php endif; ?>
-
                                                 </div>
+
+
+                                                <span class="badge-activo">
+                                                    Disponible
+                                                </span>
 
                                             </div>
 
+                                        <?php endforeach; ?>
 
-                                            <span class="badge-activo">
+                                    </div>
 
-                                                Disponible
-
-                                            </span>
-
-
-                                        </div>
-
-                                    <?php endforeach; ?>
+                                <?php endif; ?>
 
 
-                                </div>
+                            </div>
 
-                            <?php endif; ?>
-
-
-                        </div>
-
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
 
 
-                </div>
+                    </div>
 
-            </section>
+                </section>
 
-        </div>
+            </div>
+
+        <?php endforeach; ?>
 
 
     </div>
@@ -1418,9 +1088,9 @@ require_once __DIR__
 
                 <p>
 
-                    Podés agregar, modificar o desactivar
-                    los horarios publicados desde
-                    el panel administrativo.
+                    Podés agregar, modificar o eliminar
+                    el horario de cada técnico
+                    desde el panel administrativo.
 
                 </p>
 
@@ -1429,7 +1099,7 @@ require_once __DIR__
 
             <a
                 href="<?= url(
-                    'admin/horarios.php'
+                    'admin/horarios_tecnicos.php'
                 ) ?>"
                 class="btn-administrar"
             >
@@ -1437,6 +1107,50 @@ require_once __DIR__
                 <i class="bi bi-pencil-square"></i>
 
                 Administrar horarios
+
+            </a>
+
+        </div>
+
+    <?php endif; ?>
+
+
+    <?php if (
+        esTecnico()
+    ): ?>
+
+        <div class="admin-card">
+
+            <div>
+
+                <strong>
+
+                    <i class="bi bi-person-gear me-1"></i>
+
+                    Mi horario
+
+                </strong>
+
+                <p>
+
+                    Cargá o modificá vos mismo
+                    tus horarios de trabajo habituales.
+
+                </p>
+
+            </div>
+
+
+            <a
+                href="<?= url(
+                    'tecnico/horario.php'
+                ) ?>"
+                class="btn-administrar"
+            >
+
+                <i class="bi bi-pencil-square"></i>
+
+                Administrar mi horario
 
             </a>
 

@@ -118,13 +118,13 @@ if ($esLocal) {
 
     // HOSTINGER (producción)
 
-    $dbHost = 'localhost';
+   // $dbHost = 'localhost';
 
-    $dbName = 'u922954738_tecnica_sanjo';
+    //$dbName = 'u922954738_tecnica_sanjo';
 
-    $dbUser = 'u922954738_tecnica_sanjo';
+   // $dbUser = 'u922954738_tecnica_sanjo';
 
-    $dbPass = 'ddLFmy3Z+';
+   // $dbPass = 'ddLFmy3Z+';
 }
 
 $dbCharset = 'utf8mb4';

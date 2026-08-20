@@ -20,6 +20,7 @@ $__hrefMantenimiento = $__esTecnicoAdminNav
     : url('solicitudes.php?tipo=Mantenimiento');
 ?>
 <!doctype html>
+
 <html lang="es">
 
 <head>
@@ -33,6 +34,11 @@ content="width=device-width, initial-scale=1">
 <title>
 Sistema Técnico | Colegio San José
 </title>
+
+<link rel="icon" type="image/x-icon" href="<?= asset('img/favicon.ico') ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= asset('img/favicon-32x32.png') ?>">
+<link rel="icon" type="image/png" sizes="16x16" href="<?= asset('img/favicon-16x16.png') ?>">
+<link rel="apple-touch-icon" href="<?= asset('img/apple-touch-icon.png') ?>">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
