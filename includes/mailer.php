@@ -658,3 +658,83 @@ function notificarComentario(
         )
     );
 }
+
+
+// ============================================================
+// NOTIFICAR RESOLUCIÓN DE LA SOLICITUD
+// Se envía al docente que hizo la solicitud cuando el técnico
+// marca el problema como resuelto, con el detalle de la
+// devolución (trabajo realizado).
+// ============================================================
+
+function notificarResolucion(
+    PDO $conexion,
+    array $solicitud,
+    int $idSolicitud,
+    string $trabajoRealizado = '',
+    string $observacionFinal = ''
+): void {
+
+    if (!SMTP_HABILITADO) {
+        return;
+    }
+
+    $correoDestinatario =
+        $solicitud['correo_solicitante']
+        ?? $solicitud['correo']
+        ?? '';
+
+    $nombreDestinatario =
+        $solicitud['solicitante']
+        ?? trim(
+            ($solicitud['nombre'] ?? '')
+            . ' ' .
+            ($solicitud['apellido'] ?? '')
+        );
+
+    $numero = numeroTicket($idSolicitud);
+
+    $urlTicket =
+        urlAbsoluta(
+            'ver_solicitud.php?id='
+            . $idSolicitud
+        );
+
+    $trabajoRealizado = trim($trabajoRealizado);
+    $observacionFinal = trim($observacionFinal);
+
+    $cuerpo =
+        '<p>Tu solicitud <strong>' . htmlspecialchars($numero, ENT_QUOTES, 'UTF-8') . '</strong>
+        "' . htmlspecialchars($solicitud['titulo'] ?? '', ENT_QUOTES, 'UTF-8') . '"
+        fue resuelta y cerrada por el equipo técnico.</p>';
+
+    if ($trabajoRealizado !== '') {
+
+        $cuerpo .=
+            '<p><strong>Trabajo realizado:</strong></p>
+            <p style="background:#F8F8F8;border-left:3px solid #B12626;
+            padding:10px 14px;border-radius:8px;white-space:pre-line;">'
+            . nl2br(htmlspecialchars($trabajoRealizado, ENT_QUOTES, 'UTF-8')) . '</p>';
+    }
+
+    if ($observacionFinal !== '') {
+
+        $cuerpo .=
+            '<p><strong>Observación final:</strong></p>
+            <p style="background:#F8F8F8;border-left:3px solid #B12626;
+            padding:10px 14px;border-radius:8px;white-space:pre-line;">'
+            . nl2br(htmlspecialchars($observacionFinal, ENT_QUOTES, 'UTF-8')) . '</p>';
+    }
+
+    enviarCorreo(
+        $correoDestinatario,
+        $nombreDestinatario,
+        'Ticket ' . $numero . ' resuelto',
+        plantillaCorreoHtml(
+            'Solicitud resuelta',
+            $cuerpo,
+            $urlTicket,
+            'Ver mi solicitud'
+        )
+    );
+}

@@ -10,6 +10,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/funciones.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 
 // ============================================================
@@ -1182,6 +1183,42 @@ if (
                 // =============================================
 
                 $conexion->commit();
+
+
+                // =============================================
+                // CORREO AL DOCENTE CON LA DEVOLUCIÓN
+                // Solo cuando el técnico marca el problema como
+                // resuelto (es la respuesta real al pedido).
+                // No interrumpe el flujo si falla el envío.
+                // =============================================
+
+                if (
+                    $resultado === 'resuelto'
+                    &&
+                    (int)$solicitud[
+                        'id_usuario'
+                    ]
+                    !==
+                    $idTecnico
+                ) {
+
+                    try {
+
+                        notificarResolucion(
+                            $conexion,
+                            $solicitud,
+                            $idSolicitud,
+                            $trabajoRealizado
+                        );
+
+                    } catch (Throwable $e) {
+
+                        error_log(
+                            'Error enviando correo de resolución: '
+                            . $e->getMessage()
+                        );
+                    }
+                }
 
 
                 flash(

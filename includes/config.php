@@ -118,13 +118,13 @@ if ($esLocal) {
 
     // HOSTINGER (producción)
 
-   // $dbHost = 'localhost';
+    $dbHost = 'localhost';
 
-    //$dbName = 'u922954738_tecnica_sanjo';
+    $dbName = 'u922954738_tecnica_sanjo';
 
-   // $dbUser = 'u922954738_tecnica_sanjo';
+    $dbUser = 'u922954738_tecnica_sanjo';
 
-   // $dbPass = 'ddLFmy3Z+';
+    $dbPass = 'ddLFmy3Z+';
 }
 
 $dbCharset = 'utf8mb4';
@@ -629,7 +629,7 @@ define(
 
 define(
     'SMTP_HOST',
-    ''
+    'smtp.gmail.com'
 );
 
 define(
@@ -646,12 +646,12 @@ define(
 
 define(
     'SMTP_USUARIO',
-    ''
+    'gastonferreyra@colegiodesanjose.edu.ar'
 );
 
 define(
     'SMTP_CLAVE',
-    ''
+    'aqrkwjbvjuaeqjjw'
 );
 
 define(

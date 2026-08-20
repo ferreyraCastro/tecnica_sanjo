@@ -13,17 +13,17 @@ require_once __DIR__ . '/includes/auth.php';
 
 
 // ============================================================
-// REQUERIR LOGIN
+// PÁGINA PÚBLICA
+//
+// El horario de los técnicos es información pública: no hace
+// falta iniciar sesión para consultarlo (así un docente puede
+// revisarlo antes de decidir si registra una solicitud). Si
+// hay una sesión activa, se valida que siga vigente para no
+// dejar datos de sesión inconsistentes; un visitante sin
+// sesión ve la página igual.
 // ============================================================
 
-requerirLogin();
-
-
-// ============================================================
-// VERIFICAR USUARIO
-// ============================================================
-
-if (!verificarUsuarioActivo($conexion)) {
+if (estaLogueado() && !verificarUsuarioActivo($conexion)) {
 
     $_SESSION['mensaje_login'] =
         'Tu sesión finalizó o la cuenta se encuentra inactiva.';
@@ -48,6 +48,26 @@ $dias = [
     'Viernes',
     'Sabado'
 ];
+
+
+// ============================================================
+// DÍA ACTUAL
+//
+// Se usa para resaltar, dentro del horario de cada técnico,
+// el día de hoy (mismo criterio que tecnico/dashboard.php).
+// ============================================================
+
+$diasSemana = [
+    'Monday' => 'Lunes',
+    'Tuesday' => 'Martes',
+    'Wednesday' => 'Miercoles',
+    'Thursday' => 'Jueves',
+    'Friday' => 'Viernes',
+    'Saturday' => 'Sabado',
+    'Sunday' => 'Domingo'
+];
+
+$diaActual = $diasSemana[date('l')] ?? '';
 
 
 // ============================================================
@@ -90,6 +110,21 @@ foreach (obtenerTecnicos($conexion) as $tecnico) {
         'total' => count($horarioTecnico)
     ];
 }
+
+
+// ============================================================
+// TÉCNICOS CON AL MENOS UN HORARIO CARGADO
+//
+// Un técnico que todavía no cargó nada no aporta información
+// útil en esta página, así que directamente no se muestra su
+// tarjeta (en vez de mostrarla vacía).
+// ============================================================
+
+$tecnicosConHorarioCargado =
+    array_filter(
+        $tecnicosConHorario,
+        static fn(array $entrada): bool => $entrada['total'] > 0
+    );
 
 
 // ============================================================
@@ -435,6 +470,22 @@ require_once __DIR__
     overflow: hidden;
 
     background: #FFFFFF;
+
+}
+
+
+.dia-card-hoy {
+
+    border-color: #E0BBBB;
+
+    background: #FFF3F3;
+
+}
+
+
+.dia-card-hoy .dia-header {
+
+    background: #FFF3F3;
 
 }
 
@@ -861,13 +912,17 @@ require_once __DIR__
             >
 
                 <a
-                    href="<?= url('dashboard.php') ?>"
+                    href="<?= url(
+                        estaLogueado()
+                            ? rutaDashboardRol()
+                            : 'index.php'
+                    ) ?>"
                     class="btn-volver-dashboard"
                 >
 
                     <i class="bi bi-arrow-left"></i>
 
-                    Volver al dashboard
+                    <?= estaLogueado() ? 'Volver al dashboard' : 'Volver al inicio' ?>
 
                 </a>
 
@@ -900,7 +955,7 @@ require_once __DIR__
     <div class="row g-4">
 
 
-        <?php if (empty($tecnicosConHorario)): ?>
+        <?php if (empty($tecnicosConHorarioCargado)): ?>
 
             <div class="col-12">
 
@@ -917,7 +972,7 @@ require_once __DIR__
         <?php endif; ?>
 
 
-        <?php foreach ($tecnicosConHorario as $entradaTecnico): ?>
+        <?php foreach ($tecnicosConHorarioCargado as $entradaTecnico): ?>
 
             <?php
 
@@ -929,6 +984,21 @@ require_once __DIR__
                 mb_strtoupper(mb_substr($tecnico['nombre'], 0, 1))
                 . mb_strtoupper(mb_substr($tecnico['apellido'], 0, 1));
 
+            $areaTecnico = $tecnico['area_tecnico'] ?? null;
+
+            $areaClase =
+                $areaTecnico === 'Mantenimiento'
+                    ? 'mantenimiento'
+                    : 'informatica';
+
+            $areaEtiqueta = match ($areaTecnico) {
+
+                'Mantenimiento' => 'Mantenimiento',
+                'Informatica' => 'Informática',
+                default => 'Sin área asignada'
+
+            };
+
             ?>
 
             <div class="col-xl-6">
@@ -936,7 +1006,7 @@ require_once __DIR__
                 <section class="area-card">
 
 
-                    <div class="area-header informatica">
+                    <div class="area-header <?= e($areaClase) ?>">
 
                         <div class="area-icon">
 
@@ -952,6 +1022,8 @@ require_once __DIR__
 
                             <p>
 
+                                <?= e($areaEtiqueta) ?>
+                                ·
                                 <?= $entradaTecnico['total'] ?>
                                 <?= $entradaTecnico['total'] === 1 ? 'horario cargado' : 'horarios cargados' ?>
 
@@ -965,45 +1037,41 @@ require_once __DIR__
                     <div class="area-body">
 
 
-                        <?php foreach ($dias as $dia): ?>
+                            <?php foreach ($dias as $dia): ?>
 
-                            <?php $horariosDia = $horarioPorDia[$dia] ?? []; ?>
-
-                            <div class="dia-card">
-
-
-                                <div class="dia-header">
-
-                                    <div class="dia-nombre">
-
-                                        <i class="bi bi-calendar3"></i>
-
-                                        <?= e($dia === 'Miercoles' ? 'Miércoles' : $dia) ?>
-
-                                    </div>
-
-
-                                    <div class="dia-cantidad">
-
-                                        <?= count($horariosDia) ?>
-                                        <?= count($horariosDia) === 1 ? 'horario' : 'horarios' ?>
-
-                                    </div>
-
-                                </div>
-
+                                <?php $horariosDia = $horarioPorDia[$dia] ?? []; ?>
 
                                 <?php if (empty($horariosDia)): ?>
+                                    <?php continue; ?>
+                                <?php endif; ?>
 
-                                    <div class="sin-horario">
+                                <div class="dia-card <?= $dia === $diaActual ? 'dia-card-hoy' : '' ?>">
 
-                                        <i class="bi bi-dash-circle"></i>
 
-                                        Sin horario publicado
+                                    <div class="dia-header">
+
+                                        <div class="dia-nombre">
+
+                                            <i class="bi bi-calendar3"></i>
+
+                                            <?= e($dia === 'Miercoles' ? 'Miércoles' : $dia) ?>
+
+                                            <?php if ($dia === $diaActual): ?>
+                                                · Hoy
+                                            <?php endif; ?>
+
+                                        </div>
+
+
+                                        <div class="dia-cantidad">
+
+                                            <?= count($horariosDia) ?>
+                                            <?= count($horariosDia) === 1 ? 'horario' : 'horarios' ?>
+
+                                        </div>
 
                                     </div>
 
-                                <?php else: ?>
 
                                     <div class="horario-lista">
 
@@ -1045,12 +1113,10 @@ require_once __DIR__
 
                                     </div>
 
-                                <?php endif; ?>
 
+                                </div>
 
-                            </div>
-
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
 
 
                     </div>

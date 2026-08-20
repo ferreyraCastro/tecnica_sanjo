@@ -54,6 +54,19 @@ $estadosPermitidos = [
 
 
 // ============================================================
+// ÁREA DEL TÉCNICO
+//
+// Solo aplica a usuarios con rol Tecnico. Define si su tarjeta
+// en horarios.php se muestra como Informática o Mantenimiento.
+// ============================================================
+
+$areasTecnicoPermitidas = [
+    'Informatica',
+    'Mantenimiento'
+];
+
+
+// ============================================================
 // FUNCIÓN REDIRECCIÓN
 // ============================================================
 
@@ -212,6 +225,19 @@ if (
             );
 
 
+        $areaTecnico =
+            limpiarTexto(
+                $_POST['area_tecnico']
+                ?? ''
+            );
+
+        // El área solo tiene sentido para técnicos.
+        if ($rol !== 'Tecnico') {
+
+            $areaTecnico = '';
+        }
+
+
         $estado =
             limpiarTexto(
                 $_POST['estado']
@@ -245,6 +271,9 @@ if (
 
             'rol' =>
                 $rol,
+
+            'area_tecnico' =>
+                $areaTecnico,
 
             'estado' =>
                 $estado
@@ -1277,6 +1306,7 @@ $form =
         'telefono' => '',
         'whatsapp_apikey' => '',
         'rol' => 'Docente',
+        'area_tecnico' => '',
         'estado' => 'Activo'
 
     ];
@@ -1895,6 +1925,49 @@ require_once __DIR__
 
     color: #6F42C1;
     background: #F0E9FA;
+
+}
+
+
+.area-badge {
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 4px;
+
+    margin-top: 4px;
+
+    padding: 5px 8px;
+
+    border-radius: 20px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+}
+
+
+.area-informatica {
+
+    color: #0B7285;
+    background: #E3F6FA;
+
+}
+
+
+.area-mantenimiento {
+
+    color: #B15C00;
+    background: #FFF1E0;
+
+}
+
+
+.area-sin-asignar {
+
+    color: #8A8A8A;
+    background: #F0F0F0;
 
 }
 
@@ -2808,9 +2881,12 @@ require_once __DIR__
                                 que la persona tenga que
                                 apretar nada. Para conseguir la
                                 apikey: desde el WhatsApp de
-                                esta persona, agregar el
-                                contacto +34 644 59 71 67
-                                (CallMeBot) y enviarle el
+                                esta persona, entrar a
+                                callmebot.com/blog/free-api-whatsapp-messages
+                                para ver el número de contacto
+                                vigente (CallMeBot cambia ese
+                                número cuando se satura),
+                                agregarlo y enviarle el
                                 mensaje "I allow callmebot to
                                 send me messages". El bot
                                 responde con el número de

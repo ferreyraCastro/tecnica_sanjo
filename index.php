@@ -15,51 +15,96 @@ require_once __DIR__ . '/includes/auth.php';
 // ============================================================
 // index.php ES EL PANEL PRINCIPAL DEL SISTEMA
 //
-// A quien no inició sesión se le muestra la presentación
-// habitual de la plataforma. A quien sí inició sesión se le
-// suma, más abajo, el estado en vivo de las intervenciones
-// (Intervenciones / Pendientes / Finalizadas), tomado
-// directamente de la base de datos.
+// El encabezado ("Mi panel" / "Ingresar") sigue dependiendo de
+// si hay sesión iniciada. La tabla de solicitudes registradas,
+// en cambio, es pública: cualquier visitante puede revisarla
+// para ver si su reclamo ya está cargado antes de registrar uno
+// nuevo, sin necesidad de iniciar sesión.
 // ============================================================
 
 $mostrarPanelInicio = estaLogueado();
 
 $usuarioActual = $mostrarPanelInicio ? usuarioActual() : null;
 
-$intervencionesActivas = [];
-$pendientesInicio = [];
-$finalizadasInicio = [];
+$mostrarTablaSolicitudes = true;
+
+$solicitudesPanelInicio = [];
 $sectoresPanelInicio = [];
 
-if ($mostrarPanelInicio) {
+if ($mostrarTablaSolicitudes) {
 
-    $intervencionesActivas = obtenerIntervencionesActivas($conexion);
+    // ============================================================
+    // TABLA ÚNICA DE SOLICITUDES
+    //
+    // Se unifican intervenciones activas, pendientes y finalizadas
+    // en una sola lista simple: cada fila ya trae su estado y,
+    // si corresponde, el trabajo realizado. Así un docente ve de
+    // un vistazo, filtrando por aula, si ya existe un reclamo
+    // registrado para no cargar el mismo de nuevo.
+    // ============================================================
 
-    $pendientesInicio = obtenerPendientes($conexion);
+    foreach (obtenerIntervencionesActivas($conexion) as $fila) {
 
-    $finalizadasInicio = obtenerFinalizadas($conexion);
+        $solicitudesPanelInicio[] = [
+            'id_solicitud'      => (int)$fila['id_solicitud'],
+            'titulo'            => $fila['titulo'],
+            'sector'            => $fila['sector'] ?? '',
+            'estado'            => $fila['estado'],
+            'tecnico'           => $fila['tecnico_asignado'] ?? '',
+            'trabajo_realizado' => null,
+            'fecha'             => $fila['fecha_actualizacion'] ?? null
+        ];
+    }
+
+    foreach (obtenerPendientes($conexion) as $fila) {
+
+        $solicitudesPanelInicio[] = [
+            'id_solicitud'      => (int)$fila['id_solicitud'],
+            'titulo'            => $fila['titulo'],
+            'sector'            => $fila['sector'] ?? '',
+            'estado'            => $fila['estado'],
+            'tecnico'           => $fila['tecnico_asignado'] ?? '',
+            'trabajo_realizado' => null,
+            'fecha'             => $fila['fecha_actualizacion'] ?? null
+        ];
+    }
+
+    foreach (obtenerFinalizadas($conexion) as $fila) {
+
+        $solicitudesPanelInicio[] = [
+            'id_solicitud'      => (int)$fila['id_solicitud'],
+            'titulo'            => $fila['titulo'],
+            'sector'            => $fila['sector'] ?? '',
+            'estado'            => $fila['estado'],
+            'tecnico'           => $fila['tecnico_responsable'] ?? '',
+            'trabajo_realizado' => $fila['trabajo_realizado'] ?? null,
+            'fecha'             =>
+                $fila['fecha_fin']
+                    ?? $fila['fecha_resolucion']
+                    ?? $fila['fecha_actualizacion']
+                    ?? null
+        ];
+    }
 
 
-    // Lista de aulas/sectores presentes en los datos mostrados,
-    // para armar el filtro por curso.
+    // Más reciente primero.
 
-    foreach (
-        [
-            $intervencionesActivas,
-            $pendientesInicio,
-            $finalizadasInicio
-        ]
-        as $listaPanelInicio
-    ) {
+    usort(
+        $solicitudesPanelInicio,
+        static fn(array $a, array $b): int =>
+            strcmp((string)($b['fecha'] ?? ''), (string)($a['fecha'] ?? ''))
+    );
 
-        foreach ($listaPanelInicio as $filaPanelInicio) {
 
-            $sectorPanelInicio = $filaPanelInicio['sector'] ?? '';
+    // Lista de aulas/sectores presentes, para armar el filtro.
 
-            if ($sectorPanelInicio !== '') {
+    foreach ($solicitudesPanelInicio as $filaPanelInicio) {
 
-                $sectoresPanelInicio[$sectorPanelInicio] = true;
-            }
+        $sectorPanelInicio = $filaPanelInicio['sector'];
+
+        if ($sectorPanelInicio !== '') {
+
+            $sectoresPanelInicio[$sectorPanelInicio] = true;
         }
     }
 
@@ -788,58 +833,20 @@ if ($mostrarPanelInicio) {
         }
 
 
-        .panel-inicio-tabs {
+        .panel-inicio-contador {
 
-            display: flex;
-
-            flex-wrap: wrap;
-
-            gap: 6px;
-
-            padding:
-                14px 22px 0;
-
-        }
-
-
-        .panel-inicio-tab {
-
-            border: none;
-
-            background: #F5F6F8;
-
-            color: #616161;
+            font-size: 13px;
 
             font-weight: 700;
 
-            font-size: 14px;
+            color: #760000;
+
+            background: #F5F6F8;
 
             padding:
-                10px 18px;
+                6px 12px;
 
-            border-radius:
-                10px 10px 0 0;
-
-        }
-
-
-        .panel-inicio-tab.activo {
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #760000,
-                    #B12626
-                );
-
-            color: #FFFFFF;
-
-        }
-
-
-        .panel-inicio-tab .badge {
-
-            margin-left: 6px;
+            border-radius: 20px;
 
         }
 
@@ -854,16 +861,7 @@ if ($mostrarPanelInicio) {
 
         .panel-inicio-tabla-wrap {
 
-            display: none;
-
             overflow-x: auto;
-
-        }
-
-
-        .panel-inicio-tabla-wrap.activo {
-
-            display: block;
 
         }
 
@@ -954,6 +952,78 @@ if ($mostrarPanelInicio) {
             color: #DDDDDD;
 
             margin-bottom: 10px;
+
+        }
+
+
+        .btn-ver-solicitud {
+
+            border:
+                1px solid #B12626;
+
+            color: #B12626;
+
+            background: #FFFFFF;
+
+            font-weight: 600;
+
+            font-size: 12.5px;
+
+            border-radius: 8px;
+
+            padding:
+                6px 12px;
+
+            white-space: nowrap;
+
+        }
+
+
+        .btn-ver-solicitud:hover {
+
+            background: #B12626;
+
+            color: #FFFFFF;
+
+        }
+
+
+        .modal-solicitud-detalle {
+
+            margin: 0;
+
+        }
+
+
+        .modal-solicitud-detalle dt {
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: .03em;
+
+            color: #760000;
+
+            margin-top: 16px;
+
+        }
+
+
+        .modal-solicitud-detalle dt:first-child {
+
+            margin-top: 0;
+
+        }
+
+
+        .modal-solicitud-detalle dd {
+
+            margin: 4px 0 0;
+
+            color: #333333;
 
         }
 
@@ -1374,7 +1444,7 @@ if ($mostrarPanelInicio) {
 
 
                     <a
-                        href="<?= url('login.php') ?>"
+                        href="<?= url('horarios.php') ?>"
                         class="btn btn-horarios"
                     >
 
@@ -1668,11 +1738,11 @@ if ($mostrarPanelInicio) {
 
 
 
-<?php if ($mostrarPanelInicio): ?>
+<?php if ($mostrarTablaSolicitudes): ?>
 
 <!-- =========================================================
      PANEL DE INICIO
-     Intervenciones / Pendientes / Finalizadas
+     Tabla única de solicitudes (estado + qué se hizo)
 ========================================================= -->
 
 <section class="seccion panel-inicio">
@@ -1682,14 +1752,13 @@ if ($mostrarPanelInicio) {
         <div class="titulo-seccion">
 
             <h2>
-                Estado de las intervenciones
+                Solicitudes registradas
             </h2>
 
             <p>
-                Seguimiento en vivo de los pedidos registrados,
-                actualizado directamente desde la base de datos.
-                Filtrá por aula o curso para ver si ya existe
-                un reclamo activo antes de cargar uno nuevo.
+                Estado actual de cada pedido y, si ya se resolvió,
+                qué se hizo. Filtrá por aula o curso para ver si tu
+                reclamo ya está registrado antes de cargar uno nuevo.
             </p>
 
         </div>
@@ -1723,65 +1792,23 @@ if ($mostrarPanelInicio) {
 
                 </select>
 
-            </div>
-
-
-            <div class="panel-inicio-tabs">
-
-                <button
-                    type="button"
-                    class="panel-inicio-tab activo"
-                    data-panel="intervenciones"
-                    onclick="panelInicioMostrar('intervenciones')"
-                >
-                    Intervenciones
-                    <span class="badge bg-light text-dark">
-                        <?= count($intervencionesActivas) ?>
-                    </span>
-                </button>
-
-                <button
-                    type="button"
-                    class="panel-inicio-tab"
-                    data-panel="pendientes"
-                    onclick="panelInicioMostrar('pendientes')"
-                >
-                    Pendientes
-                    <span class="badge bg-light text-dark">
-                        <?= count($pendientesInicio) ?>
-                    </span>
-                </button>
-
-                <button
-                    type="button"
-                    class="panel-inicio-tab"
-                    data-panel="finalizadas"
-                    onclick="panelInicioMostrar('finalizadas')"
-                >
-                    Finalizadas
-                    <span class="badge bg-light text-dark">
-                        <?= count($finalizadasInicio) ?>
-                    </span>
-                </button>
+                <span class="panel-inicio-contador">
+                    <?= count($solicitudesPanelInicio) ?>
+                    <?= count($solicitudesPanelInicio) === 1 ? 'solicitud' : 'solicitudes' ?>
+                </span>
 
             </div>
 
 
             <div class="panel-inicio-contenido">
 
+                <div class="panel-inicio-tabla-wrap">
 
-                <!-- INTERVENCIONES -->
-
-                <div
-                    class="panel-inicio-tabla-wrap activo"
-                    data-panel="intervenciones"
-                >
-
-                    <?php if (empty($intervencionesActivas)): ?>
+                    <?php if (empty($solicitudesPanelInicio)): ?>
 
                         <div class="panel-inicio-vacio">
                             <i class="bi bi-check2-circle"></i>
-                            No hay intervenciones en curso en este momento.
+                            Todavía no hay solicitudes registradas.
                         </div>
 
                     <?php else: ?>
@@ -1791,47 +1818,29 @@ if ($mostrarPanelInicio) {
                             <thead>
                                 <tr>
                                     <th>N°</th>
+                                    <th>Aula / curso</th>
                                     <th>Problema</th>
-                                    <th>Aula / sector</th>
-                                    <th>Equipo</th>
-                                    <th>Técnico</th>
-                                    <th>Fecha</th>
                                     <th>Estado</th>
+                                    <th class="text-end">Acción</th>
                                 </tr>
                             </thead>
 
                             <tbody>
 
-                                <?php foreach ($intervencionesActivas as $fila): ?>
+                                <?php foreach ($solicitudesPanelInicio as $fila): ?>
 
-                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
+                                    <tr data-sector="<?= e($fila['sector']) ?>">
 
                                         <td class="panel-inicio-ticket">
-                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
+                                            <?= e(numeroTicket($fila['id_solicitud'])) ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($fila['sector'] !== '' ? $fila['sector'] : '-') ?>
                                         </td>
 
                                         <td>
                                             <?= e($fila['titulo']) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($fila['sector'] ?? '-') ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($fila['equipo'] ?? '-') ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e(
-                                                trim($fila['tecnico_asignado'] ?? '') !== ''
-                                                    ? $fila['tecnico_asignado']
-                                                    : 'Sin asignar'
-                                            ) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e(fechaCorta($fila['fecha_actualizacion'])) ?>
                                         </td>
 
                                         <td>
@@ -1840,84 +1849,28 @@ if ($mostrarPanelInicio) {
                                             </span>
                                         </td>
 
-                                    </tr>
-
-                                <?php endforeach; ?>
-
-                            </tbody>
-
-                        </table>
-
-                    <?php endif; ?>
-
-                </div>
-
-
-                <!-- PENDIENTES -->
-
-                <div
-                    class="panel-inicio-tabla-wrap"
-                    data-panel="pendientes"
-                >
-
-                    <?php if (empty($pendientesInicio)): ?>
-
-                        <div class="panel-inicio-vacio">
-                            <i class="bi bi-hourglass-split"></i>
-                            No hay solicitudes pendientes en este momento.
-                        </div>
-
-                    <?php else: ?>
-
-                        <table>
-
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Problema</th>
-                                    <th>Aula / sector</th>
-                                    <th>Motivo</th>
-                                    <th>Técnico</th>
-                                    <th>Fecha</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                <?php foreach ($pendientesInicio as $fila): ?>
-
-                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
-
-                                        <td class="panel-inicio-ticket">
-                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($fila['titulo']) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($fila['sector'] ?? '-') ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e(
-                                                $fila['tipo_pendiente']
-                                                    ?? $fila['motivo_pendiente']
-                                                    ?? 'Sin especificar'
-                                            ) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e(
-                                                trim($fila['tecnico_asignado'] ?? '') !== ''
-                                                    ? $fila['tecnico_asignado']
-                                                    : 'Sin asignar'
-                                            ) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e(fechaCorta($fila['fecha_actualizacion'])) ?>
+                                        <td class="text-end">
+                                            <button
+                                                type="button"
+                                                class="btn-ver-solicitud"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalSolicitud"
+                                                data-ticket="<?= e(numeroTicket($fila['id_solicitud'])) ?>"
+                                                data-aula="<?= e($fila['sector'] !== '' ? $fila['sector'] : '-') ?>"
+                                                data-problema="<?= e($fila['titulo']) ?>"
+                                                data-estado="<?= e($fila['estado']) ?>"
+                                                data-estado-clase="<?= e(claseEstado($fila['estado'])) ?>"
+                                                data-tecnico="<?= e(
+                                                    trim($fila['tecnico'] ?? '') !== ''
+                                                        ? $fila['tecnico']
+                                                        : 'Sin asignar'
+                                                ) ?>"
+                                                data-trabajo="<?= e($fila['trabajo_realizado'] ?? 'Todavía sin resolver.') ?>"
+                                                data-fecha="<?= e(fechaCorta($fila['fecha'])) ?>"
+                                            >
+                                                <i class="bi bi-eye me-1"></i>
+                                                Ver
+                                            </button>
                                         </td>
 
                                     </tr>
@@ -1932,88 +1885,73 @@ if ($mostrarPanelInicio) {
 
                 </div>
 
+            </div>
 
-                <!-- FINALIZADAS -->
+        </div>
 
-                <div
-                    class="panel-inicio-tabla-wrap"
-                    data-panel="finalizadas"
-                >
 
-                    <?php if (empty($finalizadasInicio)): ?>
+        <!-- =====================================================
+             MODAL: DETALLE DE LA SOLICITUD
+        ====================================================== -->
 
-                        <div class="panel-inicio-vacio">
-                            <i class="bi bi-clipboard-check"></i>
-                            Todavía no hay intervenciones finalizadas.
-                        </div>
+        <div
+            class="modal fade"
+            id="modalSolicitud"
+            tabindex="-1"
+            aria-hidden="true"
+        >
 
-                    <?php else: ?>
+            <div class="modal-dialog modal-dialog-centered">
 
-                        <table>
+                <div class="modal-content">
 
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Problema informado</th>
-                                    <th>Aula / sector</th>
-                                    <th>Trabajo realizado</th>
-                                    <th>Técnico</th>
-                                    <th>Fecha de finalización</th>
-                                </tr>
-                            </thead>
+                    <div class="modal-header">
 
-                            <tbody>
+                        <h5 class="modal-title">
+                            <i class="bi bi-ticket-detailed me-2"></i>
+                            <span id="modalSolicitudTicket"></span>
+                        </h5>
 
-                                <?php foreach ($finalizadasInicio as $fila): ?>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                        ></button>
 
-                                    <tr data-sector="<?= e($fila['sector'] ?? '') ?>">
+                    </div>
 
-                                        <td class="panel-inicio-ticket">
-                                            <?= e(numeroTicket((int)$fila['id_solicitud'])) ?>
-                                        </td>
+                    <div class="modal-body">
 
-                                        <td>
-                                            <?= e($fila['titulo']) ?>
-                                        </td>
+                        <dl class="modal-solicitud-detalle">
 
-                                        <td>
-                                            <?= e($fila['sector'] ?? '-') ?>
-                                        </td>
+                            <dt>Aula / curso</dt>
+                            <dd id="modalSolicitudAula"></dd>
 
-                                        <td>
-                                            <?= e($fila['trabajo_realizado'] ?? 'Sin detalle registrado') ?>
-                                        </td>
+                            <dt>Problema</dt>
+                            <dd id="modalSolicitudProblema"></dd>
 
-                                        <td>
-                                            <?= e(
-                                                trim($fila['tecnico_responsable'] ?? '') !== ''
-                                                    ? $fila['tecnico_responsable']
-                                                    : '-'
-                                            ) ?>
-                                        </td>
+                            <dt>Estado</dt>
+                            <dd>
+                                <span
+                                    id="modalSolicitudEstado"
+                                    class="badge"
+                                ></span>
+                            </dd>
 
-                                        <td>
-                                            <?= e(
-                                                fechaCorta(
-                                                    $fila['fecha_fin']
-                                                        ?? $fila['fecha_resolucion']
-                                                        ?? $fila['fecha_actualizacion']
-                                                )
-                                            ) ?>
-                                        </td>
+                            <dt>Técnico</dt>
+                            <dd id="modalSolicitudTecnico"></dd>
 
-                                    </tr>
+                            <dt>Qué se hizo</dt>
+                            <dd id="modalSolicitudTrabajo"></dd>
 
-                                <?php endforeach; ?>
+                            <dt>Última actualización</dt>
+                            <dd id="modalSolicitudFecha"></dd>
 
-                            </tbody>
+                        </dl>
 
-                        </table>
-
-                    <?php endif; ?>
+                    </div>
 
                 </div>
-
 
             </div>
 
@@ -2026,26 +1964,34 @@ if ($mostrarPanelInicio) {
 
 <script>
 
-function panelInicioMostrar(nombre) {
+document
+    .getElementById('modalSolicitud')
+    .addEventListener('show.bs.modal', function (evento) {
 
-    document
-        .querySelectorAll('.panel-inicio-tab')
-        .forEach(function (boton) {
-            boton.classList.toggle(
-                'activo',
-                boton.dataset.panel === nombre
-            );
-        });
+        var boton = evento.relatedTarget;
 
-    document
-        .querySelectorAll('.panel-inicio-tabla-wrap')
-        .forEach(function (tabla) {
-            tabla.classList.toggle(
-                'activo',
-                tabla.dataset.panel === nombre
-            );
-        });
-}
+        document.getElementById('modalSolicitudTicket').textContent =
+            boton.dataset.ticket;
+
+        document.getElementById('modalSolicitudAula').textContent =
+            boton.dataset.aula;
+
+        document.getElementById('modalSolicitudProblema').textContent =
+            boton.dataset.problema;
+
+        var estadoBadge = document.getElementById('modalSolicitudEstado');
+        estadoBadge.textContent = boton.dataset.estado;
+        estadoBadge.className = 'badge ' + boton.dataset.estadoClase;
+
+        document.getElementById('modalSolicitudTecnico').textContent =
+            boton.dataset.tecnico;
+
+        document.getElementById('modalSolicitudTrabajo').textContent =
+            boton.dataset.trabajo;
+
+        document.getElementById('modalSolicitudFecha').textContent =
+            boton.dataset.fecha;
+    });
 
 
 function panelInicioFiltrar() {
